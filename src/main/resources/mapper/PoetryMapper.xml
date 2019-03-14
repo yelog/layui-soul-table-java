@@ -13,6 +13,17 @@
         <result property="createTime" column="create_time" />
     </resultMap>
     <select id="dataGrid" resultMap="baseMap">
-        select id, title, dynasty, author, content, type, heat, create_time from poetry
+        select
+          id, title, dynasty, author, content, type, heat, create_time
+        from
+          poetry
+        <where>
+            <if test="so.title != null and so.title != ''">
+                title like '%${so.title}%'
+            </if>
+            <if test="so.content != null and so.content != ''">
+                and content like '%${so.content}%'
+            </if>
+        </where>
     </select>
 </mapper>

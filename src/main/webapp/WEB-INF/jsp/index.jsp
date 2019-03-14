@@ -4,6 +4,11 @@
 <html>
 <head>
     <title>Title</title>
+    <style>
+        .layui-table-tips {
+            white-space: pre;
+        }
+    </style>
 </head>
 <body>
 <form action="" id="searchForm" class="layui-form" lay-filter="searchForm">
@@ -11,39 +16,36 @@
     <div class="layui-row soul-condition">
         <div class="layui-col-lg3 layui-col-md4 layui-col-sm6">
             <div class="layui-inline">
-                <label class="layui-form-label">姓名</label>
+                <label class="layui-form-label">诗词</label>
                 <div class="layui-input-inline" >
-                    <input type="text" name="code"
-                           class="layui-input" placeholder="请选择机台代码">
+                    <input type="text" name="title"
+                           class="layui-input" placeholder="请输入诗词关键字">
                 </div>
             </div>
         </div>
         <div class="layui-col-lg3 layui-col-md4 layui-col-sm6">
             <div class="layui-inline">
-                <label class="layui-form-label">职业</label>
+                <label class="layui-form-label">内容</label>
                 <div class="layui-input-inline">
-                    <input type="text" name="name"
-                           class="layui-input" placeholder="请选择机台名称">
+                    <input type="text" name="content"
+                           class="layui-input" placeholder="请选择内容关键词">
                 </div>
             </div>
         </div>
-        <div class="layui-col-lg4 layui-col-md6 layui-col-sm12">
-            <div class="layui-inline">
-                <label class="layui-form-label">出生日期</label>
-                <div class="layui-input-inline">
-                    <input type="text" name="birthday"
-                           class="layui-input" placeholder="出生日期">
-                </div>
-            </div>
-        </div>
+        <%--<div class="layui-col-lg4 layui-col-md6 layui-col-sm12">--%>
+            <%--<div class="layui-inline">--%>
+                <%--<label class="layui-form-label">录入时间</label>--%>
+                <%--<div class="layui-input-inline">--%>
+                    <%--<input type="text" name="createTime"--%>
+                           <%--class="layui-input" placeholder="录入时间">--%>
+                <%--</div>--%>
+            <%--</div>--%>
+        <%--</div>--%>
         <div class="layui-col-lg1 layui-col-md1 layui-col-sm2 layui-col-xs3">
             <button class="layui-btn mgl-20" lay-submit="" lay-filter="search"><i class="layui-icon">&#xe615;</i>查询</button>
         </div>
         <div class="layui-col-lg1 layui-col-md1 layui-col-sm2 layui-col-xs3">
             <button class="layui-btn mgl-20" lay-submit="" lay-filter="export"><i class="layui-icon">&#xe615;</i>导出</button>
-        </div>
-        <div class="layui-col-lg1 layui-col-md1 layui-col-sm2 layui-col-xs3">
-            <button class="layui-btn mgl-20" data-type="getCheckData">获取选中行数据</button>
         </div>
     </div>
     <%--这边是下面表格的部分--%>
@@ -63,18 +65,8 @@
             soulTable = layui.soulTable;
 
 
-        // 渲染开始时间
         laydate.render({
-            elem: '[name=createTimeStart]'
-        });
-
-        // 渲染结束时间
-        laydate.render({
-            elem: '[name=createTimeEnd]'
-        });
-
-        laydate.render({
-            elem: '[name=modiTime]',
+            elem: '[name=createTime]',
             range: true
         });
 
@@ -84,18 +76,18 @@
             elem: '#myTable',
             url: '${path}/poetry/dataGrid',
             method: 'post',
-            height: $(document).height() - $('#myTable').offset().top - 5,
+            height: $(document).height() - $('#myTable').offset().top - 50,
             sort: 'back',
             cols: [[
                 {type: 'checkbox', fixed: 'left'},
                 {field: 'id', title: '序号', width: 100, sort: true, filter: true},
-                {field: 'title', title: '诗词', width: 100, sort: true, filter: true},
-                {field: 'dynasty', title: '朝代', width: 100},
+                {field: 'title', title: '诗词', width: 200, sort: true, filter: true},
+                {field: 'dynasty', title: '朝代', width: 100, sort: true, filter: true},
 				{field: 'author', title: '作者', width: 165 , filter: true},
 				{field: 'content', title: '内容', width: 123, filter: true},
 				{field: 'type', title: '类型', width: 112, merge: 'charlineCode', filter: true, sort:true},
 				{field: 'heat', title: '点赞数', width: 112, merge: 'charlineCode', filter: true, sort:true},
-				{field: 'createTime', title: '录入时间', width: 112, merge: 'charlineCode', filter: {type: 'date[yyyy-MM-dd HH:mm:ss]'}, sort:true},
+				{field: 'createTime', title: '录入时间', width: 165, merge: 'charlineCode', filter: {type: 'date[yyyy-MM-dd HH:mm:ss]'}, sort:true},
                 {title: '操作', width: 156, templet: '#bar',fixed: 'right'}
             ]]
             , excel:{ // 导出excel配置, （以下值均为默认值）
@@ -126,24 +118,17 @@
 
         // 查询
         form.on('submit(search)', function (data) {
-            var where = myTable.config.where;
-            for (var key in data.field) {
-                where[key] = data.field[key]
-            }
-            if (where.modiTime) {
-                where['modiTimeStart'] = where.modiTime.split(' - ')[0];
-                where['modiTimeEnd'] = where.modiTime.split(' - ')[0];
-            }
-            // soulTable.setReload(myTable, true);// 查询时重载下拉列表
+            soulTable.setReload(myTable.config, true);// 查询时重载下拉列表
 
             myTable.reload({  // 重载 table
-                where: where
+                where: data.field
             });
             return false;
         });
 
+        // 导出
         form.on('submit(export)', function (data) {
-        	soulTable.export(myTable);
+        	soulTable.export(myTable.config);
         	return false;
 		})
 
@@ -161,11 +146,6 @@
                     content: JSON.stringify(data)
                 })
             }
-        });
-
-        form.on('submit(none)', function () {
-            layer.msg('暂无实例！', {time: 1000});
-            return false;
         });
 
         // 获取选中数据

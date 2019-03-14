@@ -115,7 +115,7 @@ public class PageInterceptor implements Interceptor {
 
                         if (DB_DIALECT.MYSQL.name().equalsIgnoreCase(dbType)) {
                             //改造后带分页查询的SQL语句 MYSQL版
-                            pageSql = "select * from (" + filterSql.toString() + " ) A limit " + soulPage.getOffset() + ", " + (soulPage.getOffset() + soulPage.getLimit());
+                            pageSql = "select * from (" + filterSql.toString() + " ) A limit " + soulPage.getOffset() + ", " + soulPage.getLimit();
                         }
                         metaObject.setValue("delegate.boundSql.sql",pageSql);
                     }

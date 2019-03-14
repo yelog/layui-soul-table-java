@@ -36,7 +36,7 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
             'notNull': '不为空'
         },
         dateTimeItems = {
-            'all': '查看全部',
+            'all': '全部',
             'yesterday': '昨天',
             'thisWeek': '本周',
             'lastWeek': '上周',
@@ -431,7 +431,7 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
                     }
 
                     var filterType = $(this).parent().data('type');
-                    if (filterType && filterType.startWith('date')) {
+                    if (filterType && filterType.startsWith('date')) {
                         _this.showDate(myTable, field, filterSo, animate, $(this).offset().top, $(this).parent().offset().left + $(this).parent().width(), 'down', true);
                     } else {
                         /**
@@ -1388,7 +1388,7 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
                     left = $that.offset().left - 115;
                     animate = 'fadeInRight';
                 }
-                $('#main-list' + tableId).data('type', $that.data('type')).hide().css({
+                $('#main-list' + tableId).data('type',myTable.where.tableFilterType?JSON.parse(myTable.where.tableFilterType)[$that.data('column')]||'':'').hide().css({
                     'top': $that.offset().top + 10,
                     'left': left
                 }).show().removeClass().addClass(animate + ' animated');
@@ -1559,13 +1559,13 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
                 scrollLeft = $table.next().children('.layui-table-box').children('.layui-table-main').scrollLeft();
 
 
-            myTable.where = where_cache[myTable.id];
             if (typeof myTable.url != 'undefined' && myTable.page) {
                 $table.data('scrollLeft', scrollLeft);
                 /**
                  * 后台筛选
                  */
                 table.reload(myTable.id, {
+                    where: where_cache[myTable.id],
                     page: {
                         curr: 1 //重新从第 1 页开始
                     }
@@ -1574,7 +1574,7 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
                 /**
                  * 前端筛选
                  */
-                var where = myTable.where,
+                var where = where_cache[myTable.id],
                     filterSos = JSON.parse(where.filterSos ? where.filterSos : '[]'),
                     tableFilterTypes = where.tableFilterType ? JSON.parse(where.tableFilterType) : {},
                     loading = layer.load(2);
@@ -2176,7 +2176,7 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
                         $.extend(filterSo, {
                             values: []
                         })
-                    } else if (mode === 'date' && !(tableFilterTypes[newField] && tableFilterTypes[newField].startWidth('date'))) {
+                    } else if (mode === 'date' && !(tableFilterTypes[newField] && tableFilterTypes[newField].startsWith('date'))) {
                         $.extend(filterSo, {
                             mode: 'in',
                             values: []
@@ -2292,7 +2292,7 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
             if (myTable.url && myTable.page) {
                 $.ajax({
                     url: myTable.url,
-                    data: myTable.where,
+                    data: where_cache[myTable.id],
                     dataType: 'json',
                     async: false,
                     cache: false,
