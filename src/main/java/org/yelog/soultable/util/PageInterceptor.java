@@ -5,6 +5,7 @@ import org.apache.ibatis.executor.parameter.ParameterHandler;
 import org.apache.ibatis.executor.statement.StatementHandler;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
+import org.apache.ibatis.mapping.ResultMapping;
 import org.apache.ibatis.plugin.*;
 import org.apache.ibatis.reflection.DefaultReflectorFactory;
 import org.apache.ibatis.reflection.MetaObject;
@@ -12,16 +13,15 @@ import org.apache.ibatis.reflection.SystemMetaObject;
 import org.apache.ibatis.session.RowBounds;
 import org.apache.log4j.Logger;
 
-import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-//拦截StatementHandler中参数类型为Connection的prepare方法
 @Intercepts({@Signature(type= StatementHandler.class,method="prepare",args={Connection.class,Integer.class})})
 public class PageInterceptor implements Interceptor {
     public static Logger log = Logger.getLogger(PageInterceptor.class);
@@ -81,6 +81,12 @@ public class PageInterceptor implements Interceptor {
                     // 排序
                     return invocation.proceed();
                 } else {
+                    Map<String, String> fieldMap = new HashMap<>();
+                    if (mappedStatement.getResultMaps().get(0).getResultMappings().size()>0) {
+                        for (ResultMapping resultMapping : mappedStatement.getResultMaps().get(0).getResultMappings()) {
+                            fieldMap.put(resultMapping.getProperty(),resultMapping.getColumn());
+                        }
+                    }
                     /**
                      * 分页
                      */
@@ -90,7 +96,7 @@ public class PageInterceptor implements Interceptor {
 					List<FilterSo> filterSos = soulPage.getFilterSos();
 					if (filterSos != null) {
                         filterSos.forEach(filterSo->{
-                            handleFilterSo(filterSo, typeMap, filterSql);
+                            handleFilterSo(filterSo, typeMap, fieldMap, filterSql);
                         });
                     }
 					if (StringUtils.endsWith(filterSql, "WHERE")) {
@@ -100,7 +106,7 @@ public class PageInterceptor implements Interceptor {
 
                     // 排序
                     if (StringUtils.isNotBlank(soulPage.getField())) {
-                        filterSql.append(" order by " + soulPage.getField() + " " + soulPage.getOrder());
+                        filterSql.append(" order by " + (fieldMap.size()>0?fieldMap.get(soulPage.getField()):soulPage.getField()) + " " + soulPage.getOrder());
                     }
 
                     if (soulPage.getLimit()==100000000) {
@@ -110,10 +116,12 @@ public class PageInterceptor implements Interceptor {
                         soulPage.setCount(getTotle(invocation, metaObject, filterSql.toString()));
 
                         // 改造后带分页查询的SQL语句 ORACLE 版
-                        String pageSql = "select * from (select * from ( select A.*,ROWNUM AS SOULROWNUM from ("
-                                + filterSql.toString() + " ) A) where SOULROWNUM <= " + (soulPage.getOffset() + soulPage.getLimit()) + ") where SOULROWNUM > " + soulPage.getOffset();
+                        String pageSql;
 
-                        if (DB_DIALECT.MYSQL.name().equalsIgnoreCase(dbType)) {
+                        if (DB_DIALECT.ORACLE.name().equalsIgnoreCase(dbType)) {
+                            pageSql = "select * from (select * from ( select A.*,ROWNUM AS SOULROWNUM from ("
+                                    + filterSql.toString() + " ) A) where SOULROWNUM <= " + (soulPage.getOffset() + soulPage.getLimit()) + ") where SOULROWNUM > " + soulPage.getOffset();
+                        } else {
                             //改造后带分页查询的SQL语句 MYSQL版
                             pageSql = "select * from (" + filterSql.toString() + " ) A limit " + soulPage.getOffset() + ", " + soulPage.getLimit();
                         }
@@ -130,12 +138,12 @@ public class PageInterceptor implements Interceptor {
         return invocation.proceed();
     }
 
-    private void handleFilterSo(FilterSo filterSo, Map<String, Map<String, String>> typeMap, StringBuffer filterSql) {
+    private void handleFilterSo(FilterSo filterSo, Map<String, Map<String, String>> typeMap, Map<String, String> fieldMap, StringBuffer filterSql) {
         if (!StringUtils.endsWith(filterSql, "(") && !StringUtils.endsWith(filterSql, "WHERE")) {
             filterSql.append(StringUtils.isBlank(filterSo.getPrefix())?" and":" "+filterSo.getPrefix());
         }
 
-        String field = filterSo.getField();
+        String field = fieldMap.size()>0?fieldMap.get(filterSo.getField()):filterSo.getField();
         String value = filterSo.getValue();
         switch (filterSo.getMode()) {
             case "in":
@@ -145,11 +153,27 @@ public class PageInterceptor implements Interceptor {
                 }
                 switch (typeMap.get(field)==null?"":typeMap.get(field).get("type")) {
                     case "date":
-                        filterSql.append(" to_char(")
-                                .append(field)
-                                .append(", '")
-                                .append(typeMap.get(field).get("value").replaceAll("HH", "HH24").replaceAll("mm", "mi"))
-                                .append("') in ('")
+						if (DB_DIALECT.ORACLE.name().equalsIgnoreCase(dbType)) {
+                            filterSql.append(" to_char(");
+						} else {
+                            filterSql.append(" DATE_FORMAT(");
+						}
+
+						filterSql.append(field)
+                                .append(", '");
+                        if (DB_DIALECT.ORACLE.name().equalsIgnoreCase(dbType)) {
+                            filterSql.append(typeMap.get(field).get("value").replaceAll("HH", "HH24").replaceAll("mm", "mi"));
+                        } else {
+                            filterSql.append(typeMap.get(field).get("value")
+                                    .replaceAll("yyyy", "%Y")
+                                    .replaceAll("MM", "%m")
+                                    .replaceAll("dd", "%d")
+                                    .replaceAll("HH", "%H")
+                                    .replaceAll("mm", "%i")
+                                    .replaceAll("ss", "%s"));
+                        }
+
+                        filterSql.append("') in ('")
                                 .append(StringUtils.join(filterSo.getValues(), "','"))
                                 .append("')");
                         break;
@@ -214,22 +238,47 @@ public class PageInterceptor implements Interceptor {
                 filterSql.append(field);
                 switch (filterSo.getType()) {
                     case "yesterday":
-                        filterSql.append(" between trunc(sysdate - 1) and trunc(sysdate)-1/(24*60*60) ");
+                        if (DB_DIALECT.ORACLE.name().equalsIgnoreCase(dbType)) {
+                            filterSql.append(" between trunc(sysdate - 1) and trunc(sysdate)-1/(24*60*60) ");
+                        } else {
+                            filterSql.append(" between date_add(curdate(), interval -1 day) and date_add(curdate(),  interval -1 second) ");
+                        }
                         break;
                     case "thisWeek":
-                        filterSql.append(" between trunc(sysdate - to_char(sysdate-2,'D')) and trunc(sysdate - to_char(sysdate-2,'D') + 7)-1/(24*60*60) ");
+                        if (DB_DIALECT.ORACLE.name().equalsIgnoreCase(dbType)) {
+                            filterSql.append(" between trunc(sysdate - to_char(sysdate-2,'D')) and trunc(sysdate - to_char(sysdate-2,'D') + 7)-1/(24*60*60) ");
+                        } else {
+                            filterSql.append(" between date_add(curdate(), interval - weekday(curdate()) day) and date_add(date_add(curdate(), interval - weekday(curdate())+7 day), interval -1 second) ");
+                        }
                         break;
                     case "lastWeek":
-                        filterSql.append(" between trunc(sysdate - to_char(sysdate-2,'D') - 7) and trunc(sysdate - to_char(sysdate-2,'D'))-1/(24*60*60) ");
+                        if (DB_DIALECT.ORACLE.name().equalsIgnoreCase(dbType)) {
+                            filterSql.append(" between trunc(sysdate - to_char(sysdate-2,'D') - 7) and trunc(sysdate - to_char(sysdate-2,'D'))-1/(24*60*60) ");
+                        } else {
+                            filterSql.append(" between date_add(curdate(), interval - weekday(curdate())-7 day) and date_add(date_add(curdate(), interval - weekday(curdate()) day), interval -1 second) ");
+                        }
                         break;
                     case "thisMonth":
-                        filterSql.append(" between trunc(sysdate, 'mm') and trunc(last_day(sysdate)+1)-1/(24*60*60) ");
+                        if (DB_DIALECT.ORACLE.name().equalsIgnoreCase(dbType)) {
+                            filterSql.append(" between trunc(sysdate, 'mm') and trunc(last_day(sysdate)+1)-1/(24*60*60) ");
+                        } else {
+                            filterSql.append(" between date_add(curdate(), interval - day(curdate()) + 1 day) and DATE_ADD(last_day(curdate()), interval 24*60*60-1 second) ");
+                        }
                         break;
                     case "thisYear":
-                        filterSql.append(" between trunc(sysdate, 'yyyy') and to_date(to_char(sysdate,'yyyy')||'-12-31 23:59:59', 'yyyy-mm-dd hh24:mi:ss') ");
+                        if (DB_DIALECT.ORACLE.name().equalsIgnoreCase(dbType)) {
+                            filterSql.append(" between trunc(sysdate, 'yyyy') and to_date(to_char(sysdate,'yyyy')||'-12-31 23:59:59', 'yyyy-mm-dd hh24:mi:ss') ");
+                        } else {
+                            filterSql.append(" between date_sub(curdate(),interval dayofyear(now())-1 day) and str_to_date(concat(year(now()),'-12-31 23:59:59'), '%Y-%m-%d %H:%i:%s') ");
+                        }
+
                         break;
                     case "specific":
-                        filterSql.append(" between to_date('").append(filterSo.getValue()).append("', 'yyyy-mm-dd') and to_date('").append(filterSo.getValue()).append("', 'yyyy-mm-dd')+1-1/(24*60*60) ");
+                        if (DB_DIALECT.ORACLE.name().equalsIgnoreCase(dbType)) {
+                            filterSql.append(" between to_date('").append(filterSo.getValue()).append("', 'yyyy-mm-dd') and to_date('").append(filterSo.getValue()).append("', 'yyyy-mm-dd')+1-1/(24*60*60) ");
+                        } else {
+                            filterSql.append(" between str_to_date('").append(filterSo.getValue()).append("', '%Y-%m-%d') and str_to_date(concat('").append(filterSo.getValue()).append("',' 23:59:59'), '%Y-%m-%d %H:%i:%s') ");
+                        }
                         break;
                     case "all":
                     default:
@@ -242,7 +291,7 @@ public class PageInterceptor implements Interceptor {
                 filterSql.append(" (");
                 if (filterSo.getChildren().size()>0) {
                     filterSo.getChildren().forEach(f->{
-                        handleFilterSo(f, typeMap, filterSql);
+                        handleFilterSo(f, typeMap, fieldMap ,filterSql);
                     });
                 } else {
                     filterSql.append(" 1=1");
@@ -273,7 +322,7 @@ public class PageInterceptor implements Interceptor {
     private int getTotle(Invocation invocation, MetaObject metaObject, String sql) throws SQLException {
         Connection connection = (Connection)invocation.getArgs()[0];
         // 查询总条数的SQL语句
-        String countSql = "select count(*) from (" + sql + ")a";
+        String countSql = "select count(*) from (" + sql + ") a";
         //执行总条数SQL语句的查询
         PreparedStatement countStatement = connection.prepareStatement(countSql);
         ////获取参数信息即where语句的条件信息，注意上面拿到的sql中参数还是用?代替的
@@ -294,48 +343,5 @@ public class PageInterceptor implements Interceptor {
         return index == 0;
     }
 
-    /**
-     * 获取obj对象fieldName的Field
-     * @param obj
-     * @param fieldName
-     * @return
-     */
-    public static Field getFieldByFieldName(Object obj, String fieldName) {
-        for (Class<?> superClass = obj.getClass(); superClass != Object.class; superClass = superClass
-                .getSuperclass()) {
-            try {
-                return superClass.getDeclaredField(fieldName);
-            } catch (NoSuchFieldException e) {
-            }
-        }
-        return null;
-    }
-
-    /**
-     * 获取obj对象fieldName的属性值
-     * @param obj
-     * @param fieldName
-     * @return
-     * @throws SecurityException
-     * @throws NoSuchFieldException
-     * @throws IllegalArgumentException
-     * @throws IllegalAccessException
-     */
-    public static Object getValueByFieldName(Object obj, String fieldName)
-            throws SecurityException, NoSuchFieldException,
-            IllegalArgumentException, IllegalAccessException {
-        Field field = getFieldByFieldName(obj, fieldName);
-        Object value = null;
-        if(field!=null){
-            if (field.isAccessible()) {
-                value = field.get(obj);
-            } else {
-                field.setAccessible(true);
-                value = field.get(obj);
-                field.setAccessible(false);
-            }
-        }
-        return value;
-    }
 
 }

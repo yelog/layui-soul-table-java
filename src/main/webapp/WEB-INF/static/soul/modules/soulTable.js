@@ -7,7 +7,8 @@ layui.define(['tableFilter', 'tableChild'], function (exports) {
 
     var tableFilter = layui.tableFilter,
         tableChild = layui.tableChild,
-        $ = layui.$;
+        $ = layui.$,
+        HIDE = 'layui-hide';
 
     // 封装方法
     var mod = {
@@ -18,9 +19,6 @@ layui.define(['tableFilter', 'tableChild'], function (exports) {
             if (typeof myTable.drag == 'undefined' || myTable.drag) {
                 this.drag(myTable);
             }
-        }
-        , setReload(myTable, value) {
-            tableFilter.setReload(myTable, value);
         }
         , drag: function (myTable) {
             var _this = this,

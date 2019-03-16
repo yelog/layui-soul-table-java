@@ -118,7 +118,7 @@
 
         // 查询
         form.on('submit(search)', function (data) {
-            soulTable.setReload(myTable.config, true);// 查询时重载下拉列表
+            // soulTable.setReload(myTable.config, true);// 查询时重载下拉列表
 
             myTable.reload({  // 重载 table
                 where: data.field

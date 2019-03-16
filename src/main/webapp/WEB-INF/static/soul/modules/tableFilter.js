@@ -46,23 +46,6 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
 
     // 封装方法
     var mod = {
-        // 设置是否重新加载下拉列表，默认为 false 不重载
-        setReload: function (myTable, value) {
-            if (myTable && myTable) {
-                if (tables[myTable.id]) {
-                    tables[myTable.id].reload = value
-                } else {
-                    tables[myTable.id] = {
-                        'reload': value
-                    }
-                }
-
-                if (value) {
-                    var where = myTable.where;
-                    delete where['filterSos'];
-                }
-            }
-        },
         /**
          * 摧毁render数据
          * @param myTables
@@ -97,6 +80,8 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
                 $tableHead = $table.next().children('.layui-table-box').children('.layui-table-header').children('table'),
                 tableId = $table.attr('id'),
                 columns = [].concat.apply([], myTable.cols),
+				needFilter = false, // 是否存在筛选列需要进行初始化
+				initFilter = false, // 是否为第一次筛选
                 mainExcel = typeof myTable.excel == 'undefined' || ((myTable.excel && (typeof myTable.excel.on == 'undefined' || myTable.excel.on)) ? myTable.excel : false);
 
             // 渲染底部筛选条件
@@ -110,21 +95,25 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
             }
 
             for (var i = 0; i < columns.length; i++) {
-                if (columns[i].field && columns[i].filter && $tableHead.find('th[data-field="'+columns[i].field+'"]').children().children('.soul-table-filter').length===0) {
-                    if ($tableHead.find('th[data-field="'+columns[i].field+'"]').children().children('.layui-table-sort').length>0) {
-                        $tableHead.find('th[data-field="'+columns[i].field+'"]').children().children('.layui-table-sort').hide()
-                        $tableHead.find('th[data-field="'+columns[i].field+'"]').children().append('<span class="layui-table-sort soul-table-filter layui-inline" data-column="'+columns[i].field+'" ><i class="soul-icon soul-icon-filter"></i><i class="soul-icon soul-icon-filter-asc"></i><i class="soul-icon soul-icon-filter-desc"></i></span>')
-                    } else {
-                        $tableHead.find('th[data-field="'+columns[i].field+'"]').children().append('<span class="soul-table-filter layui-inline" data-column="'+columns[i].field+'" ><i class="soul-icon soul-icon-filter"></i><i class="soul-icon soul-icon-filter-asc"></i><i class="soul-icon soul-icon-filter-desc"></i></span>')
-                    }
-
-                }
+            	if (columns[i].field && columns[i].filter) {
+            		needFilter = true;
+					if ($tableHead.find('th[data-field="'+columns[i].field+'"]').children().children('.soul-table-filter').length===0) {
+						initFilter = true;
+						if ($tableHead.find('th[data-field="'+columns[i].field+'"]').children().children('.layui-table-sort').length>0) {
+							$tableHead.find('th[data-field="'+columns[i].field+'"]').children().children('.layui-table-sort').hide()
+							$tableHead.find('th[data-field="'+columns[i].field+'"]').children().append('<span class="layui-table-sort soul-table-filter layui-inline" data-column="'+columns[i].field+'" lay-sort="'+$tableHead.find('th[data-field="'+columns[i].field+'"]').children().children('.layui-table-sort').attr('lay-sort')+'"><i class="soul-icon soul-icon-filter"></i><i class="soul-icon soul-icon-filter-asc"></i><i class="soul-icon soul-icon-filter-desc"></i></span>')
+						} else {
+							$tableHead.find('th[data-field="'+columns[i].field+'"]').children().append('<span class="soul-table-filter layui-inline" data-column="'+columns[i].field+'" ><i class="soul-icon soul-icon-filter"></i><i class="soul-icon soul-icon-filter-asc"></i><i class="soul-icon soul-icon-filter-desc"></i></span>')
+						}
+					}
+				}
             }
+            if (!needFilter) {return} //如果没筛选列，直接退出
 
             /**
              * 不重载表头数据，重新绑定事件后结束
              */
-            if (tables[myTable.id] && !tables[myTable.id].reload) {
+            if (myTable.where&&myTable.where.filterSos) {
                 this.bindFilterClick(myTable);
 
                 // 表头样式
@@ -157,28 +146,14 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
                 }
 
                 return;
-            }
+            } else {
+            	where_cache[myTable.id] = {}
+			}
 
             /**
              * 缓存所有数据
              */
             cache[myTable.id] = myTable.data || layui.table.cache[myTable.id]
-
-            if (!tables[myTable.id] || !tables[myTable.id].columns) {
-                var storeColumns = {};
-                for (var i = 0; i < columns.length; i++) {
-                    storeColumns[columns[i].field] = columns[i];
-                }
-                tables[myTable.id] = {
-                    'reload': false,
-                    'columns': storeColumns
-                };
-            } else {
-                tables[myTable.id] = {
-                    'reload': false
-                };
-            }
-
 
             // 第一次渲染时，追加数据
             if ($('#soul-filter-list' + tableId).length == 0) {
@@ -186,16 +161,16 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
                 if (myTable.sort == 'back') {
                     // 后台排序
                     table.on('sort(' + myTable.id + ')', function (obj) {
-                        var where = myTable.where;
-                        where.field = obj.field;
-                        where.order = obj.type;
+                        where_cache[myTable.id].field = obj.field;
+                        where_cache[myTable.id].order = obj.type;
 
-                        table.reload(myTable.id, {
-                            where: where
+                        table.render($.extend(myTable,{
+                            initSort: obj
+                            , where: where_cache[myTable.id]
                             , page: {
                                 curr: 1 //重新从第 1 页开始
                             }
-                        })
+                        }));
                     });
                 }
 
