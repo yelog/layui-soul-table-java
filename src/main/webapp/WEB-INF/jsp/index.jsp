@@ -32,15 +32,15 @@
                 </div>
             </div>
         </div>
-        <%--<div class="layui-col-lg4 layui-col-md6 layui-col-sm12">--%>
-            <%--<div class="layui-inline">--%>
-                <%--<label class="layui-form-label">录入时间</label>--%>
-                <%--<div class="layui-input-inline">--%>
-                    <%--<input type="text" name="createTime"--%>
-                           <%--class="layui-input" placeholder="录入时间">--%>
-                <%--</div>--%>
-            <%--</div>--%>
-        <%--</div>--%>
+        <div class="layui-col-lg3 layui-col-md4 layui-col-sm6">
+            <div>
+                <label class="layui-form-label">录入时间</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="createTime" style="width: 180px;"
+                           class="layui-input" placeholder="录入时间">
+                </div>
+            </div>
+        </div>
         <div class="layui-col-lg1 layui-col-md1 layui-col-sm2 layui-col-xs3">
             <button class="layui-btn mgl-20" lay-submit="" lay-filter="search"><i class="layui-icon">&#xe615;</i>查询</button>
         </div>
@@ -121,7 +121,12 @@
 
         // 查询
         form.on('submit(search)', function (data) {
-            // soulTable.setReload(myTable.config, true);// 查询时重载下拉列表
+
+        	if (data.field.createTime) {
+				data.field.startTime = data.field.createTime.split(' - ')[0];
+				data.field.endTime = data.field.createTime.split(' - ')[1];
+            }
+			delete data.field.createTime
 
             myTable.reload({  // 重载 table
                 where: data.field

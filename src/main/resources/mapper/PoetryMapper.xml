@@ -24,6 +24,9 @@
             <if test="so.content != null and so.content != ''">
                 and content like '%${so.content}%'
             </if>
+            <if test="so.startTime != null and so.startTime != ''">
+                and create_time between STR_TO_DATE(#{so.startTime},'%Y-%m-%d') and STR_TO_DATE(#{so.endTime},'%Y-%m-%d')
+            </if>
         </where>
     </select>
 </mapper>
