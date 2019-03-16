@@ -136,7 +136,7 @@
 
         // 导出
         form.on('submit(export)', function (data) {
-        	soulTable.export(myTable.config);
+        	soulTable.export(myTable);
         	return false;
 		})
 

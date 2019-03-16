@@ -21,7 +21,7 @@ layui.define(['tableFilter', 'tableChild'], function (exports) {
             }
         }
         , export: function (myTable, curExcel) {
-            tableFilter.export(myTable, curExcel);
+            tableFilter.export(myTable.config, curExcel);
         }
 		/**
 		 * 左右拖拽调整列顺序、向上拖隐藏列
