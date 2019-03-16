@@ -228,6 +228,7 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
                     if (data.elem.checked) {
                         $table.next().children('.layui-table-box').children('.layui-table-header').find('thead>tr>th[data-field=' + data.value + ']').removeClass(HIDE);
                         $table.next().children('.layui-table-box').children('.layui-table-body').find('tbody>tr>td[data-field=' + data.value + ']').removeClass(HIDE);
+                        $table.next().children('.layui-table-total').find('tbody>tr>td[data-field=' + data.value + ']').removeClass(HIDE);
                         if ($(data.elem).data('fixed')) {
                             $table.next().children('.layui-table-box').children('.layui-table-fixed-' + $(data.elem).data('fixed').substr(0, 1)).find('[data-field=' + data.value + ']').removeClass(HIDE);
                         }
@@ -239,6 +240,7 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
                     } else {
                         $table.next().children('.layui-table-box').children('.layui-table-header').find('thead>tr>th[data-field=' + data.value + ']').addClass(HIDE);
                         $table.next().children('.layui-table-box').children('.layui-table-body').find('tbody>tr>td[data-field=' + data.value + ']').addClass(HIDE);
+                        $table.next().children('.layui-table-total').find('tbody>tr>td[data-field=' + data.value + ']').addClass(HIDE);
                         if ($(data.elem).data('fixed')) {
                             $table.next().children('.layui-table-box').children('.layui-table-fixed-' + $(data.elem).data('fixed').substr(0, 1)).find('[data-field=' + data.value + ']').addClass(HIDE);
                         }
@@ -2278,6 +2280,7 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
                 widths = {},
                 columnsMap = {},
                 $table = $(myTable.elem),
+                $tableBody = $table.next().children('.layui-table-box').children('.layui-table-body').children('table'),
                 mainExcel = typeof myTable.excel == 'undefined' || ((myTable.excel && (typeof myTable.excel.on == 'undefined' || myTable.excel.on)) ? myTable.excel : false),
                 mainExcel = mainExcel == true ? {} : mainExcel || {},
                 curExcel = curExcel || {},
@@ -2366,7 +2369,11 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
                         }
 
                         return {
-                            v: curIndex !== 0 && columnsMap[field].templet ? $('<div>' + columnsMap[field].templet(line) + '</div>').text() || line[field] | '' : line[field] || '',// v 代表单元格的值
+                            v: curIndex !== 0 && columnsMap[field].templet ?
+                                typeof columnsMap[field].templet == 'function' ?
+                                    $('<div>' + columnsMap[field].templet(line) + '</div>').find(':input').length===0?$('<div>' + columnsMap[field].templet(line) + '</div>').text():$tableBody.children('tbody').children('tr[data-index='+(curIndex-1)+']').children('td[data-field="'+field+'"]').find(':input').val() || line[field] || ''
+                                    : $('<div>'+$(columnsMap[field].templet).html()+'</div>').find(':input').length===0?$('<div>'+$(columnsMap[field].templet).html()+'</div>').text():$tableBody.children('tbody').children('tr[data-index='+(curIndex-1)+']').children('td[data-field="'+field+'"]').find(':input').val() || line[field] || ''
+                                : line[field] || '',// v 代表单元格的值
                             s: {// s 代表样式
                                 alignment: {
                                     horizontal: 'center',

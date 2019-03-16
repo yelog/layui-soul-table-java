@@ -202,6 +202,7 @@ layui.define(['tableFilter', 'tableChild'], function (exports) {
                                         $this.data('field');
                                         $table.next().children('.layui-table-box').children('.layui-table-header').find('thead>tr>th[data-field=' + $this.data('field') + ']').addClass(HIDE);
                                         $table.next().children('.layui-table-box').children('.layui-table-body').find('tbody>tr>td[data-field=' + $this.data('field') + ']').addClass(HIDE);
+                                        $table.next().children('.layui-table-total').find('tbody>tr>td[data-field=' + $this.data('field') + ']').addClass(HIDE);
                                         if ($this.data('fixed')) {
                                             $table.next().children('.layui-table-box').children('.layui-table-fixed-' + $this.data('fixed').substr(0, 1)).find('[data-field=' + $this.data('field') + ']').addClass(HIDE);
                                         }
