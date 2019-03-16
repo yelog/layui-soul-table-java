@@ -90,6 +90,9 @@
 				{field: 'createTime', title: '录入时间', width: 165, merge: 'charlineCode', filter: {type: 'date[yyyy-MM-dd HH:mm:ss]'}, sort:true},
                 {title: '操作', width: 156, templet: '#bar',fixed: 'right'}
             ]]
+			, filter: {
+				items:['column','data','condition','editCondition','excel'] //用于控制表头下拉显示，可以控制顺序、显示
+			}
             , excel:{ // 导出excel配置, （以下值均为默认值）
             	on: true, //是否启用, 默认开启
             	filename: '诗词.xlsx', // 文件名

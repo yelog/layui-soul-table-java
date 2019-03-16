@@ -80,7 +80,8 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
                 $tableHead = $table.next().children('.layui-table-box').children('.layui-table-header').children('table'),
                 tableId = $table.attr('id'),
                 columns = [].concat.apply([], myTable.cols),
-				needFilter = false, // 是否存在筛选列需要进行初始化
+                filterItems = myTable.filter?myTable.filter.items||['column','data','condition','editCondition','excel']:['column','data','condition','editCondition','excel'],
+                needFilter = false, // 是否存在筛选列需要进行初始化
 				initFilter = false, // 是否为第一次筛选
                 mainExcel = typeof myTable.excel == 'undefined' || ((myTable.excel && (typeof myTable.excel.on == 'undefined' || myTable.excel.on)) ? myTable.excel : false);
 
@@ -174,16 +175,22 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
                     });
                 }
 
-                var soulFilterList = [];
+                var soulFilterList = [],
+                    filterItemsHtml = {
+                        column: '<li class="soul-column"><i class="layui-icon layui-icon-table"></i> 表格列 <i class="layui-icon layui-icon-right" style="float: right"></i></li>',
+                        data: '<li class="soul-dropList"><i class="soul-icon soul-icon-drop-list"></i> 筛选数据 <i class="layui-icon layui-icon-right" style="float: right"></i></li>',
+                        condition: '<li class="soul-condition"><i class="soul-icon soul-icon-query"></i> 筛选条件 <i class="layui-icon layui-icon-right" style="float: right"></i></li>',
+                        editCondition: '<li class="soul-edit-condition"><i class="layui-icon layui-icon-edit"></i> 编辑筛选条件 </li>',
+                        excel: '<li class="soul-export"><i class="soul-icon soul-icon-download"></i> 导出excel </li>',
+                    };
                 soulFilterList.push('<div id="soul-filter-list' + tableId + '"><form action="" class="layui-form" lay-filter="orm"><ul id="main-list' + tableId + '" style="display: none">');
                 soulFilterList.push('<li class="soul-sort" data-value="asc" ><i class="soul-icon soul-icon-asc"></i> 升序排列 </li>');
                 soulFilterList.push('<li class="soul-sort" data-value="desc"  style="border-bottom: 1px solid #e6e6e6"><i class="soul-icon soul-icon-desc"></i> 降序排列 </li>');
-                soulFilterList.push('<li class="soul-column"><i class="layui-icon layui-icon-table"></i> 表格列 <i class="layui-icon layui-icon-right" style="float: right"></i></li>');
-                soulFilterList.push('<li class="soul-dropList"><i class="soul-icon soul-icon-drop-list"></i> 筛选数据 <i class="layui-icon layui-icon-right" style="float: right"></i></li>');
-                soulFilterList.push('<li class="soul-condition"><i class="soul-icon soul-icon-query"></i> 筛选条件 <i class="layui-icon layui-icon-right" style="float: right"></i></li>');
-                soulFilterList.push('<li class="soul-edit-condition"><i class="layui-icon layui-icon-edit"></i> 编辑筛选条件 </li>');
-                if (mainExcel) {
-                    soulFilterList.push('<li class="soul-export"><i class="soul-icon soul-icon-download"></i> 导出excel </li>');
+                for (var i = 0; i < filterItems.length; i++) {
+                    if (filterItems[i]==='excel' && !mainExcel){
+                        continue
+                    }
+                    soulFilterList.push(filterItemsHtml[filterItems[i]]);
                 }
                 soulFilterList.push('</ul><ul id="soul-columns' + tableId + '" style="display: none;">');
 
@@ -725,85 +732,87 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
                         columnField.push($(this).data('column'));
                     }
                 });
-                if (typeof myTable.url != 'undefined' && myTable.page) {
-                    var datas = JSON.parse(JSON.stringify(myTable.where)), url = myTable.url;
-                    datas['columns'] = JSON.stringify(columnField);
-                    $.ajax({
-                        url: url,
-                        data: datas,
-                        dataType: 'json',
-                        success: function (result) {
+                if (filterItems.indexOf('data')!=-1) {
+                    if (typeof myTable.url != 'undefined' && myTable.page) {
+                        var datas = JSON.parse(JSON.stringify(myTable.where)), url = myTable.url;
+                        datas['columns'] = JSON.stringify(columnField);
+                        $.ajax({
+                            url: url,
+                            data: datas,
+                            dataType: 'json',
+                            success: function (result) {
 
-                            var uls = [];
-                            for (var key in result) {
-                                var list = result[key];
-                                if (!(list.length == 1 && list[0] == '')) {
-                                    var ul = [];
-                                    ul.push("<ul class='" + key + "DropList' data-value='" + key + "'>");
+                                var uls = [];
+                                for (var key in result) {
+                                    var list = result[key];
+                                    if (!(list.length == 1 && list[0] == '')) {
+                                        var ul = [];
+                                        ul.push("<ul class='" + key + "DropList' data-value='" + key + "'>");
 
-                                    var columnsConfigs = columns;
-                                    for (var j = 0; j < columnsConfigs.length; j++) {
-                                        if (columnsConfigs[j].field == key) {
-                                            for (var i = 0; i < list.length; i++) {
-                                                if (list[i]) {
-                                                    var line = {};
-                                                    line[key] = list[i];
-                                                    ul.push('<li data-value="' + list[i].toLowerCase() + '"><input type="checkbox" value="' + list[i] + '" title="' + ((columnsConfigs[j].templet && typeof columnsConfigs[j].templet == 'function' ? columnsConfigs[j].templet.call(this, line) : list[i]) + "").replace(/\"|\'/g, '\'') + '" lay-skin="primary" lay-filter="soulDropList' + tableId + '"></li>')
+                                        var columnsConfigs = columns;
+                                        for (var j = 0; j < columnsConfigs.length; j++) {
+                                            if (columnsConfigs[j].field == key) {
+                                                for (var i = 0; i < list.length; i++) {
+                                                    if (list[i]) {
+                                                        var line = {};
+                                                        line[key] = list[i];
+                                                        ul.push('<li data-value="' + list[i].toLowerCase() + '"><input type="checkbox" value="' + list[i] + '" title="' + ((columnsConfigs[j].templet && typeof columnsConfigs[j].templet == 'function' ? columnsConfigs[j].templet.call(this, line) : list[i]) + "").replace(/\"|\'/g, '\'') + '" lay-skin="primary" lay-filter="soulDropList' + tableId + '"></li>')
+                                                    }
                                                 }
+                                                break;
                                             }
-                                            break;
                                         }
+
+                                        ul.push("</ul>");
+                                        uls.push(ul.join(''));
+                                    } else {
+                                        uls.push("<ul class='" + key + "DropList' data-value='" + key + "'><li style='color: gray;line-height: 25px;padding-left: 20px;'>(无数据)</li></ul>")
                                     }
-
-                                    ul.push("</ul>");
-                                    uls.push(ul.join(''));
+                                }
+                                $('#soulDropList' + tableId).html(uls.join(''));
+                            },
+                            error: function () {
+                                // layer.msg('列筛选数据查询失败！', {icon: 2, anim: 6})
+                            }
+                        })
+                    } else {
+                        var tableDatas = layui.table.cache[myTable.id];
+                        var dropDatas = {};
+                        for (var i = 0; i < tableDatas.length; i++) {
+                            for (var j = 0; j < columnField.length; j++) {
+                                var value = tableDatas[i][columnField[j]] ? tableDatas[i][columnField[j]] : '';
+                                if (dropDatas[columnField[j]]) {
+                                    if (dropDatas[columnField[j]].indexOf(value) == -1) {
+                                        dropDatas[columnField[j]].push(value);
+                                    }
                                 } else {
-                                    uls.push("<ul class='" + key + "DropList' data-value='" + key + "'><li style='color: gray;line-height: 25px;padding-left: 20px;'>(无数据)</li></ul>")
+                                    dropDatas[columnField[j]] = [value]
                                 }
                             }
-                            $('#soulDropList' + tableId).html(uls.join(''));
-                        },
-                        error: function () {
-                            // layer.msg('列筛选数据查询失败！', {icon: 2, anim: 6})
                         }
-                    })
-                } else {
-                    var tableDatas = layui.table.cache[myTable.id];
-                    var dropDatas = {};
-                    for (var i = 0; i < tableDatas.length; i++) {
-                        for (var j = 0; j < columnField.length; j++) {
-                            var value = tableDatas[i][columnField[j]] ? tableDatas[i][columnField[j]] : '';
-                            if (dropDatas[columnField[j]]) {
-                                if (dropDatas[columnField[j]].indexOf(value) == -1) {
-                                    dropDatas[columnField[j]].push(value);
-                                }
-                            } else {
-                                dropDatas[columnField[j]] = [value]
-                            }
-                        }
-                    }
 
-                    var columnsConfigs = columns;
-                    var uls = [];
-                    for (var j = 0; j < columnsConfigs.length; j++) {
-                        var key = columnsConfigs[j].field;
-                        var list = dropDatas[key];
-                        if (list && !(list.length == 1 && list[0] == '')) {
-                            list.sort()
-                            var ul = [];
-                            ul.push("<ul class='" + key + "DropList' data-value='" + key + "'>");
-                            for (var i = 0; i < list.length; i++) {
-                                var line = {};
-                                line[key] = list[i];
-                                ul.push('<li data-value="' + list[i].toString().toLowerCase() + '"><input type="checkbox" value="' + list[i] + '" title="' + ((columnsConfigs[j].templet && typeof columnsConfigs[j].templet == 'function' ? columnsConfigs[j].templet.call(this, line) : list[i]) + "").replace(/\"|\'/g, '\'') + '" lay-skin="primary" lay-filter="soulDropList' + tableId + '"></li>')
+                        var columnsConfigs = columns;
+                        var uls = [];
+                        for (var j = 0; j < columnsConfigs.length; j++) {
+                            var key = columnsConfigs[j].field;
+                            var list = dropDatas[key];
+                            if (list && !(list.length == 1 && list[0] == '')) {
+                                list.sort()
+                                var ul = [];
+                                ul.push("<ul class='" + key + "DropList' data-value='" + key + "'>");
+                                for (var i = 0; i < list.length; i++) {
+                                    var line = {};
+                                    line[key] = list[i];
+                                    ul.push('<li data-value="' + list[i].toString().toLowerCase() + '"><input type="checkbox" value="' + list[i] + '" title="' + ((columnsConfigs[j].templet && typeof columnsConfigs[j].templet == 'function' ? columnsConfigs[j].templet.call(this, line) : list[i]) + "").replace(/\"|\'/g, '\'') + '" lay-skin="primary" lay-filter="soulDropList' + tableId + '"></li>')
+                                }
+                                ul.push("</ul>");
+                                uls.push(ul.join(''));
+                            } else {
+                                uls.push("<ul class='" + key + "DropList' data-value='" + key + "'><li style='color: gray;line-height: 25px;padding-left: 20px;'>(无数据)</li></ul>")
                             }
-                            ul.push("</ul>");
-                            uls.push(ul.join(''));
-                        } else {
-                            uls.push("<ul class='" + key + "DropList' data-value='" + key + "'><li style='color: gray;line-height: 25px;padding-left: 20px;'>(无数据)</li></ul>")
                         }
+                        $('#soulDropList' + tableId).html(uls.join(''));
                     }
-                    $('#soulDropList' + tableId).html(uls.join(''));
                 }
             }
 
@@ -1866,8 +1875,9 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
                 $table = $(myTable.elem),
                 tableId = $table.attr('id'),
                 $bottomCondition = $table.next().children('.soul-bottom-contion'),
-                fieldMap = {}, bcHtml = [];
-            var columns = [].concat.apply([], myTable.cols);
+                fieldMap = {}, bcHtml = [],
+                filterItems = myTable.filter?myTable.filter.items||['column','data','condition','editCondition','excel']:['column','data','condition','editCondition','excel'],
+                columns = [].concat.apply([], myTable.cols);
             for (var i = 0; i < columns.length; i++) {
                 if (columns[i].field && columns[i].filter) {
                     fieldMap[columns[i]['field']] = columns[i]['title']
@@ -1905,10 +1915,14 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
             // 3. 条件选择
             if ($('#soul-bf-type' + tableId).length == 0) {
                 bcHtml.push('<div id="soul-bf-type' + tableId + '" style="display: none;"><ul>')
-                bcHtml.push('<li data-value="in" data-mode="in">筛选数据</li>')
-                bcHtml.push('<li data-value="all" data-mode="date">选择日期</li>')
-                for (var key in conditionChangeItems) {
-                    bcHtml.push('<li data-value="' + key + '" data-mode="condition">' + conditionChangeItems[key] + '</li>')
+                if (filterItems.indexOf('data')!=-1) {
+                    bcHtml.push('<li data-value="in" data-mode="in">筛选数据</li>')
+                }
+                if (filterItems.indexOf('condition')!=-1) {
+                    bcHtml.push('<li data-value="all" data-mode="date">选择日期</li>')
+                    for (var key in conditionChangeItems) {
+                        bcHtml.push('<li data-value="' + key + '" data-mode="condition">' + conditionChangeItems[key] + '</li>')
+                    }
                 }
                 bcHtml.push('</ul></div>')
             }
