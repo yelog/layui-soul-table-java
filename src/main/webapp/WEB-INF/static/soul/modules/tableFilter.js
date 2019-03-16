@@ -2251,6 +2251,12 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
 
         }
         , export: function (myTable, curExcel) {
+            var loading = layer.msg('文件下载中', {
+                icon: 16
+                ,time: -1
+                ,anim: -1
+                ,fixed: false
+            });
             var columns = [].concat.apply([], myTable.cols),
                 data = JSON.parse(JSON.stringify(myTable.data || layui.table.cache[myTable.id])),
                 title = {},
@@ -2261,7 +2267,9 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
                 mainExcel = typeof myTable.excel == 'undefined' || ((myTable.excel && (typeof myTable.excel.on == 'undefined' || myTable.excel.on)) ? myTable.excel : false),
                 mainExcel = mainExcel == true ? {} : mainExcel || {},
                 curExcel = curExcel || {},
-                filename = curExcel.filename || mainExcel.filename || '表格数据.xlsx',
+                filename = curExcel.filename?(typeof curExcel.filename === 'function'?curExcel.filename.call(this):curExcel.filename)
+                    : mainExcel.filename?(typeof mainExcel.filename === 'function'?mainExcel.filename.call(this):mainExcel.filename)
+                        : '表格数据.xlsx',
                 type = filename.substring(filename.lastIndexOf('.') + 1, filename.length)
 
             if (myTable.url && myTable.page) {
@@ -2388,6 +2396,7 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
                     '!cols': colConf
                 }
             });
+            layer.close(loading);
         }
     };
 
