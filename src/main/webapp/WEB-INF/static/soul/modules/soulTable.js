@@ -20,7 +20,11 @@ layui.define(['tableFilter', 'tableChild'], function (exports) {
                 this.drag(myTable);
             }
         }
-        , drag: function (myTable) {
+		/**
+		 * 左右拖拽调整列顺序、向上拖隐藏列
+		 * @param myTable
+		 */
+		, drag: function (myTable) {
             var _this = this,
                 $table = $(myTable.elem),
                 $tableHead = $table.next().children('.layui-table-box').children('.layui-table-header').children('table'),

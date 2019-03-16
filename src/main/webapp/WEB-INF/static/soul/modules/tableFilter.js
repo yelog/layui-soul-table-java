@@ -2277,6 +2277,11 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
             })
 
         }
+        /**
+         * 导出 excel 文件
+         * @param myTable
+         * @param curExcel
+         */
         , export: function (myTable, curExcel) {
             var loading = layer.msg('文件下载中', {
                 icon: 16
