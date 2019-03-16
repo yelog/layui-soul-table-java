@@ -16,36 +16,66 @@ import java.util.*;
  */
 public class SoulPage<T> {
 
-    // layui表格必须参数
+    /**
+     * layui表格必须参数⬇⬇⬇⬇⬇⬇
+     */
     private Integer code = 0;
     private String msg = "";
-    private Integer count; // 总记录
-    private List<T> data; //显示的记录
+    /**
+     * 总记录
+     */
+    private Integer count;
+    /**
+     * 显示的记录
+     */
+    private List<T> data;
 
-    // 请求条件
+    /**
+     * 请求条件
+     */
     @JsonIgnore
     private T obj;
+    /**
+     * 查询条件
+     */
     @JsonIgnore
-    private Map<String, Object> condition = new HashMap<>(); //查询条件
+    private Map<String, Object> condition = new HashMap<>();
 
-    // 请求参数
-    @JsonIgnore
-    private Integer page=1;  // 当前页 从1开始
-    @JsonIgnore
-    private Integer limit=100000000; // 页大小
-    @JsonIgnore
-    private String datasource; //数据源
+    /**
+     * 请求参数⬇⬇⬇⬇⬇⬇
+     */
 
+    /**
+     * 当前页 从1开始
+     */
     @JsonIgnore
-    private String columns; // 查询列数据
+    private Integer page=1;
+    /**
+     * 页大小
+     */
+    @JsonIgnore
+    private Integer limit=100000000;
 
+    /**
+     * 查询列数据
+     */
     @JsonIgnore
-    private String tableFilterType; // 表格列类型
-    // 筛选信息
+    private String columns;
+
+    /**
+     * 表格列类型
+     */
+    @JsonIgnore
+    private String tableFilterType;
+    /**
+     * 筛选信息
+     */
     @JsonIgnore
     private String filterSos;
 
-    // 排序信息
+    /**
+     * 排序信息
+     */
     @JsonIgnore
     private String field;
     @JsonIgnore
@@ -101,9 +131,7 @@ public class SoulPage<T> {
             Map<String, Set<String>> columnMap = new HashMap<>();
             for (T datum : data) {
                 for (String column : getColumns()) {
-                    if (columnMap.get(column) == null) {
-                        columnMap.put(column, new HashSet<>());
-                    }
+                    columnMap.computeIfAbsent(column, k -> new HashSet<>());
                     Object columnObject = null;
                     if (datum instanceof Map) {
                         columnObject = ((Map<String, ?>)datum).get(column);
@@ -158,14 +186,6 @@ public class SoulPage<T> {
 
     public void setLimit(Integer limit) {
         this.limit = limit;
-    }
-
-    public String getDatasource() {
-        return datasource;
-    }
-
-    public void setDatasource(String datasource) {
-        this.datasource = datasource;
     }
 
     public int getOffset() {
@@ -234,7 +254,7 @@ public class SoulPage<T> {
     public String getFormatValue (Map<String, Map<String, String>> typeMap, String column, Object columnObject) {
         String columnValue;
         if (typeMap.containsKey(column)) {
-            if ("date".equalsIgnoreCase(typeMap.get(column).get("type")) && columnObject instanceof Date) { // date类型
+            if ("date".equalsIgnoreCase(typeMap.get(column).get("type")) && columnObject instanceof Date) {
                 columnValue = dateFormat((Date) columnObject, typeMap.get(column).get("value"));
             } else {
                 columnValue = (String) columnObject;

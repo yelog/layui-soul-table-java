@@ -22,22 +22,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+/**
+ *  tableFilter的mybatis拦截器
+ *  支持：
+ *  1、表头筛选
+ *  2、分页
+ *  3、目前支持数据库：mysql、oracle
+ * @author Yelog
+ * @date 2019-03-16 22:48
+ * @version 1.0
+ */
 @Intercepts({@Signature(type= StatementHandler.class,method="prepare",args={Connection.class,Integer.class})})
 public class PageInterceptor implements Interceptor {
     public static Logger log = Logger.getLogger(PageInterceptor.class);
-    private String test; // 获取xml中配置的属性
     private String dbType;
 
 	private enum DB_DIALECT {ORACLE, MYSQL};
 
-    public String getTest() {
-        return test;
-    }
-
-    public void setTest(String test) {
-        this.test = test;
-    }
-    
     public String getDbType() {
 		return dbType;
 	}
@@ -54,7 +55,6 @@ public class PageInterceptor implements Interceptor {
         //先拦截到RoutingStatementHandler，里面有个StatementHandler类型的delegate变量，其实现类是BaseStatementHandler，然后就到BaseStatementHandler的成员变量mappedStatement
         MappedStatement mappedStatement = (MappedStatement)metaObject.getValue("delegate.mappedStatement");
         // 配置文件中SQL语句的ID
-//        String id = mappedStatement.getId();
         BoundSql boundSql = statementHandler.getBoundSql();
         // 原始的SQL语句
         String sql = boundSql.getSql();
@@ -101,12 +101,12 @@ public class PageInterceptor implements Interceptor {
                     }
 					if (StringUtils.endsWith(filterSql, "WHERE")) {
 					    filterSql.setLength(0);
-					    filterSql.append("select * from (" + sql + ") A");
+					    filterSql.append("select * from (").append(sql).append(") A");
                     }
 
                     // 排序
                     if (StringUtils.isNotBlank(soulPage.getField())) {
-                        filterSql.append(" order by " + (fieldMap.size()>0?fieldMap.get(soulPage.getField()):soulPage.getField()) + " " + soulPage.getOrder());
+                        filterSql.append(" order by ").append(fieldMap.size() > 0 ? fieldMap.get(soulPage.getField()) : soulPage.getField()).append(" ").append(soulPage.getOrder());
                     }
 
                     if (soulPage.getLimit()==100000000) {
@@ -138,6 +138,17 @@ public class PageInterceptor implements Interceptor {
         return invocation.proceed();
     }
 
+    /**
+     * 处理表头筛选数据
+     *
+     * @author Yelog
+     * @date 2019-03-16 22:52
+     * @param filterSo
+     * @param typeMap
+     * @param fieldMap
+     * @param filterSql
+     * @return void
+     */
     private void handleFilterSo(FilterSo filterSo, Map<String, Map<String, String>> typeMap, Map<String, String> fieldMap, StringBuffer filterSql) {
         if (!StringUtils.endsWith(filterSql, "(") && !StringUtils.endsWith(filterSql, "WHERE")) {
             filterSql.append(StringUtils.isBlank(filterSo.getPrefix())?" and":" "+filterSo.getPrefix());
@@ -195,34 +206,34 @@ public class PageInterceptor implements Interceptor {
                 filterSql.append(field);
                 switch (filterSo.getType()) {
                     case "eq":
-                        filterSql.append(" = '"+value+"'");
+                        filterSql.append(" = '").append(value).append("'");
                         break;
                     case "ne":
-                        filterSql.append(" != '"+value+"'");
+                        filterSql.append(" != '").append(value).append("'");
                         break;
                     case "gt":
-                        filterSql.append(" > '"+value+"'");
+                        filterSql.append(" > '").append(value).append("'");
                         break;
                     case "ge":
-                        filterSql.append(" >= '"+value+"'");
+                        filterSql.append(" >= '").append(value).append("'");
                         break;
                     case "lt":
-                        filterSql.append(" < '"+value+"'");
+                        filterSql.append(" < '").append(value).append("'");
                         break;
                     case "le":
-                        filterSql.append(" <= '"+value+"'");
+                        filterSql.append(" <= '").append(value).append("'");
                         break;
                     case "contain":
-                        filterSql.append(" like '%"+value+"%'");
+                        filterSql.append(" like '%").append(value).append("%'");
                         break;
                     case "notContain":
-                        filterSql.append(" not like '%"+value+"%'");
+                        filterSql.append(" not like '%").append(value).append("%'");
                         break;
                     case "start":
-                        filterSql.append(" like '"+value+"%'");
+                        filterSql.append(" like '").append(value).append("%'");
                         break;
                     case "end":
-                        filterSql.append(" like '%"+value+"'");
+                        filterSql.append(" like '%").append(value).append("'");
                         break;
                     case "null":
                         filterSql.append(" is null");
@@ -310,15 +321,22 @@ public class PageInterceptor implements Interceptor {
 
     @Override
     public void setProperties(Properties properties) {
-        this.test = properties.getProperty("test");
         this.dbType = properties.getProperty("dbType");
         if (StringUtils.isEmpty(dbType)) {
         	dbType = DB_DIALECT.ORACLE.name();
         }
-        // TODO Auto-generated method stub
     }
 
-    //    获取当前sql查询的记录总数
+    /**
+     * 获取当前sql查询的记录总数
+     *
+     * @author Yelog
+     * @date 2019-03-16 22:53
+     * @param invocation
+     * @param metaObject
+     * @param sql
+     * @return int
+     */
     private int getTotle(Invocation invocation, MetaObject metaObject, String sql) throws SQLException {
         Connection connection = (Connection)invocation.getArgs()[0];
         // 查询总条数的SQL语句
@@ -336,7 +354,14 @@ public class PageInterceptor implements Interceptor {
         return 0;
     }
 
-    //    判断是否是select语句，只有select语句，才会用到分页
+    /**
+     * 判断是否是select语句，只有select语句，才会用到分页
+     *
+     * @author Yujie Yang
+     * @date 2019-03-16 22:55
+     * @param sql
+     * @return boolean
+     */
     private boolean checkIsSelectFalg(String sql) {
         String trimSql = sql.trim();
         int index = trimSql.toLowerCase().indexOf("select");
