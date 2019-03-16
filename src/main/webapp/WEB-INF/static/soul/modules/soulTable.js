@@ -20,6 +20,9 @@ layui.define(['tableFilter', 'tableChild'], function (exports) {
                 this.drag(myTable);
             }
         }
+        , export: function (myTable, curExcel) {
+            tableFilter.export(myTable, curExcel);
+        }
 		/**
 		 * 左右拖拽调整列顺序、向上拖隐藏列
 		 * @param myTable
