@@ -778,11 +778,11 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
                             }
                         })
                     } else {
-                        var tableDatas = layui.table.cache[myTable.id];
+                        var tableDatas = cache[myTable.id];
                         var dropDatas = {};
                         for (var i = 0; i < tableDatas.length; i++) {
                             for (var j = 0; j < columnField.length; j++) {
-                                var value = tableDatas[i][columnField[j]] ? tableDatas[i][columnField[j]] : '';
+                                var value = typeof tableDatas[i][columnField[j]] == 'undefined' ? '' : tableDatas[i][columnField[j]];
                                 if (dropDatas[columnField[j]]) {
                                     if (dropDatas[columnField[j]].indexOf(value) == -1) {
                                         dropDatas[columnField[j]].push(value);
@@ -799,10 +799,17 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
                             var key = columnsConfigs[j].field;
                             var list = dropDatas[key];
                             if (list && !(list.length == 1 && list[0] == '')) {
-                                list.sort()
+                                list.sort(function (a, b) {
+                                    if (isNaN(a)||isNaN(b)) {
+                                        return String(a)>=String(b)
+                                    } else {
+                                        return Number(a) - Number(b)
+                                    }
+                                })
                                 var ul = [];
                                 ul.push("<ul class='" + key + "DropList' data-value='" + key + "'>");
                                 for (var i = 0; i < list.length; i++) {
+                                    if (list[i]===''){continue}
                                     var line = {};
                                     line[key] = list[i];
                                     ul.push('<li data-value="' + list[i].toString().toLowerCase() + '"><input type="checkbox" value="' + list[i] + '" title="' + ((columnsConfigs[j].templet && typeof columnsConfigs[j].templet == 'function' ? columnsConfigs[j].templet.call(this, line) : list[i]) + "").replace(/\"|\'/g, '\'') + '" lay-skin="primary" lay-filter="soulDropList' + tableId + '"></li>')
@@ -1628,52 +1635,52 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
             switch (filterSo.mode) {
                 case "in":
                     if (filterSo.values && filterSo.values.length > 0) {
-                        status = filterSo.values.indexOf(item[field]) !== -1
+                        status = filterSo.values.indexOf(item[field]+'') !== -1
                     } else {
                         return show;
                     }
                     break;
                 case "condition":
-                    if (typeof value === 'undefined' || value === '') {
+                    if (filterSo.type !== 'null' && filterSo.type !== 'notNull' && (typeof value === 'undefined' || value === '')) {
                         return show;
                     }
                     switch (filterSo.type) {
                         case "eq":
-                            status = item[field] === value;
+                            status = isNaN(item[field])||isNaN(value) ? item[field] === value : Number(item[field]) === Number(value);
                             break;
                         case "ne":
-                            status = item[field] !== value;
+                            status = isNaN(item[field])||isNaN(value) ? item[field] !== value : Number(item[field]) !== Number(value);
                             break;
                         case "gt":
-                            status = item[field] > value;
+                            status = isNaN(item[field])||isNaN(value) ? item[field] > value : Number(item[field]) > Number(value);
                             break;
                         case "ge":
-                            status = item[field] >= value;
+                            status = isNaN(item[field])||isNaN(value) ? item[field] >= value : Number(item[field]) >= Number(value);
                             break;
                         case "lt":
-                            status = item[field] < value;
+                            status = isNaN(item[field])||isNaN(value) ? item[field] < value : Number(item[field]) < Number(value);
                             break;
                         case "le":
-                            status = item[field] <= value;
+                            status = isNaN(item[field])||isNaN(value) ? item[field] <= value : Number(item[field]) <= Number(value);
                             break;
                         case "contain":
-                            status = item[field].indexOf(value) !== -1;
+                            status = (item[field]+'').indexOf(value) !== -1;
                             break;
                         case "notContain":
-                            status = item[field].indexOf(value) === -1;
+                            status = (item[field]+'').indexOf(value) === -1;
                             break;
                         case "start":
-                            status = item[field].indexOf(value) === 0;
+                            status = (item[field]+'').indexOf(value) === 0;
                             break;
                         case "end":
-                            var d = item[field].length - value.length;
-                            status = d >= 0 && item[field].lastIndexOf(value) === d;
+                            var d = (item[field]+'').length - (value+'').length;
+                            status = d >= 0 && (item[field]+'').lastIndexOf(value) === d;
                             break;
                         case "null":
-                            status = item[field] === '';
+                            status = typeof item[field] === 'undefined' || $.isEmpty(item[field]);
                             break;
                         case "notNull":
-                            status = item[field] !== '';
+                            status = typeof item[field] !== 'undefined' && !$.isEmpty(item[field]);
                             break;
                     }
                     break;
