@@ -85,9 +85,9 @@
                 {field: 'dynasty', title: '朝代', width: 100, sort: true, filter: true},
 				{field: 'author', title: '作者', width: 165 , filter: true},
 				{field: 'content', title: '内容', width: 123, filter: true},
-				{field: 'type', title: '类型', width: 112, merge: 'charlineCode', filter: true, sort:true},
-				{field: 'heat', title: '点赞数', width: 112, merge: 'charlineCode', filter: true, sort:true},
-				{field: 'createTime', title: '录入时间', width: 165, merge: 'charlineCode', filter: {type: 'date[yyyy-MM-dd HH:mm:ss]'}, sort:true},
+				{field: 'type', title: '类型', width: 112,  filter: true, sort:true},
+				{field: 'heat', title: '点赞数', width: 112,  filter: true, sort:true},
+				{field: 'createTime', title: '录入时间', width: 165, filter: {type: 'date[yyyy-MM-dd HH:mm:ss]'}, sort:true},
                 {title: '操作', width: 156, templet: '#bar',fixed: 'right'}
             ]]
 			, filter: {
