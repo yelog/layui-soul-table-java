@@ -88,7 +88,9 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
             // 渲染底部筛选条件
             if ($table.next().children('.soul-bottom-contion').length === 0) {
                 $table.next().children('.layui-table-box').after('<div class="soul-bottom-contion"><div class="condition-items"></div><div class="editCondtion"><a class="layui-btn layui-btn-primary">编辑筛选条件</a></div></div>')
-                $table.next().children('.layui-table-box').children('.layui-table-body').css('height', $table.next().children('.layui-table-box').children('.layui-table-body').height() - $table.next().children('.soul-bottom-contion').height())
+				var changeHeight = $table.next().children('.layui-table-box').children('.layui-table-body').height() - $table.next().children('.soul-bottom-contion').height();
+				$table.next().children('.layui-table-box').children('.layui-table-body').css('height', changeHeight)
+				$table.next().children('.layui-table-box').children('.layui-table-fixed').children('.layui-table-body').css('height', changeHeight)
                 $table.next().children('.soul-bottom-contion').children('.condition-items').css('width', ($table.next().children('.soul-bottom-contion').width() - $table.next().children('.soul-bottom-contion').children('.editCondtion').width()) + 'px');
                 $table.next().children('.soul-bottom-contion').children('.editCondtion').children('a').on('click', function () {
                     _this.showConditionBoard(myTable);
@@ -822,7 +824,9 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
                         }
                         $('#soulDropList' + tableId).html(uls.join(''));
                     }
-                }
+                } else {
+					_this.bindFilterClick(myTable);
+				}
             }
 
             this.bindFilterClick(myTable);
@@ -2297,6 +2301,7 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
                 type = filename.substring(filename.lastIndexOf('.') + 1, filename.length)
 
             if (myTable.url && myTable.page) {
+				var ajaxStatus = true;
                 $.ajax({
                     url: myTable.url,
                     data: where_cache[myTable.id],
@@ -2305,8 +2310,15 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
                     cache: false,
                     success: function (res) {
                         data = res.data
-                    }
+                    },
+					error: function (res) {
+						layer.msg('请求异常！',{icon:2,anim:6});
+						ajaxStatus = false;
+					}
                 })
+				if (!ajaxStatus) {
+					return;
+				}
             } else {
                 var $sortDoom = $table.next().children('.layui-table-box').children('.layui-table-header').find('.layui-table-sort[lay-sort$="sc"]:eq(0)')
                 if ($sortDoom.length > 0) {
