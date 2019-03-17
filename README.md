@@ -1,6 +1,10 @@
 ## layui-soul-table 后台java版
-
 当前soul-table版本v1.0, layui版本：v2.4.5
+
+所有筛选demo：[https://yelog.org/layui-soul-table/](https://yelog.org/layui-soul-table/)
+仅后台java版demo：[https://soultable.xiangzhangshugongyi.com/](https://soultable.xiangzhangshugongyi.com/)
+
+当然你也可以下载此项目运行查看。
 
 soulTable的前台使用方法跳转到[https://github.com/yelog/layui-soul-table](https://github.com/yelog/layui-soul-table) 查看，这里就不赘述了。
 
