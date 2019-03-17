@@ -1,5 +1,5 @@
 ## layui-soul-table 后台java版
-当前soul-table版本v1.0, layui版本：v2.4.5
+当前soul-table版本 `v1.0`, layui版本：`v2.4.5`
 
 所有筛选demo：[https://yelog.org/layui-soul-table/](https://yelog.org/layui-soul-table/)
 仅后台java版demo：[https://soultable.xiangzhangshugongyi.com/](https://soultable.xiangzhangshugongyi.com/)
@@ -53,11 +53,14 @@ public Object dataGrid(SoulPage<Poetry> soulPage) {
     return soulPage.setData(poetryMapper.dataGrid(soulPage,(PoetrySo) soulPage.getObj()));
 }
 ```
-
 3）Dao 层
 注：查询语句的第一参数必须是：`soulPage`
 ```java
     List<Poetry> dataGrid(SoulPage<Poetry> soulPage, @Param("so") PoetrySo poetrySo);
 ```
+
+## 最后
+
+当然具体的可以clone下来代码查看，有问题可以在 issue 区提问，我会尽可能快的回复。
 
 
