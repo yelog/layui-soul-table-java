@@ -37,21 +37,27 @@ layui.define(['table', 'tableFilter' ,'element', 'form'], function (exports) {
             if (child) {
                 var width = child.width? child.width : 50;
                 $tableHead.find('th:eq('+childIndex+')>div').css('width', width);
-                $tableBody.find('tr').find('td[data-key$="'+child.key+'"]>div').attr('lay-event','childTable').css({'width': width,'cursor': 'pointer'}).html('<i style="font-weight: bolder" class="soul-icon soul-icon-fold"></i>');
+                $tableBody.find('tr').find('td[data-key$="'+child.key+'"]>div').attr('lay-event','childTable').css({'width': width,'cursor': 'pointer'}).html('<i style="font-weight: bolder" class="layui-icon layui-icon-right"></i>');
                 // $tableBody.find('tr').find('td:eq('+childIndex+'):not([child])>div').css({'width':'50px'});
 
                 table.on('tool('+$table.attr('lay-filter')+')', function (obj) {
                     if (obj.event === 'childTable') {
 
-                        if (child.show == 1) { // 展开模式
+                        if (child.show == 2) { // 展开模式
 
-                            $(this).find('i').toggleClass('soul-icon-unfold');
+                            layer.open({type: 1, title: '子表', maxmin: true ,content: _this.getTables(this, obj, child, myTable), area: '1000px', offset: '100px'});
+                            _this.renderTable(this, obj, child, tableId);
+
+
+                        } else { // 弹窗模式
+
+                            $(this).find('i').toggleClass('layui-icon-down');
                             var rowspanIndex=$(this).parents('td').attr("rowspan");
 
-                            if ($(this).find('i').hasClass('soul-icon-unfold')) {
+                            if ($(this).find('i').hasClass('layui-icon-down')) {
                                 var newTr = [];
                                 newTr.push('<tr class="noHover childTr"><td colspan="'+$tableHead.find('th:visible').length+'" style="padding: 0; width: '+$(this).parents('tr').width()+'px">');
-                                newTr.push(_this.getTables(this, obj, child, tableId));
+                                newTr.push(_this.getTables(this, obj, child, myTable));
 
                                 newTr.push('</td></tr>');
 
@@ -74,10 +80,6 @@ layui.define(['table', 'tableFilter' ,'element', 'form'], function (exports) {
                                 delete tableChildren[tableId + $(this).parents('tr').data('index')]
                             }
 
-                        } else if (child.show == 2){ // 弹窗模式
-                            layer.open({type: 1, title: '子表', maxmin: true ,content: _this.getTables(this, obj, child, tableId), area: '1000px'});
-                            _this.renderTable(this, obj, child, tableId);
-
                         }
                     }
                 });
@@ -92,13 +94,16 @@ layui.define(['table', 'tableFilter' ,'element', 'form'], function (exports) {
          * @param tableId
          * @returns {string}
          */
-        getTables: function (_this, obj, child, tableId) {
-            var tables = [];
+        getTables: function (_this, obj, child, myTable) {
+            var tables = [],
+                $table = $(myTable.elem),
+                tableId = $table.attr('id'),
+                $tableBody = $table.next().children('.layui-table-box').children('.layui-table-body').children('table');
             tables.push('<div class="layui-tab layui-tab-card" style="margin: 0;border: 0;"><ul class="layui-tab-title">');
             for (var i=0;i<child.children.length;i++) {
                 tables.push('<li class="'+(i==0?'layui-this':'')+'">'+(typeof child.children[i].title === 'function' ? child.children[i].title(obj.data) :child.children[i].title)+'</li>');
             }
-            tables.push('</ul><div class="layui-tab-content" style="padding-bottom: 10px;">');
+            tables.push('</ul><div class="layui-tab-content" style="padding-bottom: 10px;max-width: '+($tableBody.width()-2)+'px">');
             for (var i=0;i<child.children.length;i++) {
                 var childTableId = tableId + $(_this).parents('tr').data('index') + i;
                 tables.push('<div class="layui-tab-item layui-show"><form action="" class="layui-form" ><table id="'+childTableId+'" lay-filter="'+childTableId+'"></table></form></div>');

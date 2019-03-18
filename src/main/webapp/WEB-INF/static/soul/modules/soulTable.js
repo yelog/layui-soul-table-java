@@ -2,6 +2,7 @@
  * Created by YujieYang.
  * @name:  表格筛选扩展
  * @author: 杨玉杰
+ * @version: 1.0
  */
 layui.define(['tableFilter', 'tableChild'], function (exports) {
 
@@ -23,11 +24,11 @@ layui.define(['tableFilter', 'tableChild'], function (exports) {
         , export: function (myTable, curExcel) {
             tableFilter.export(myTable.config, curExcel);
         }
-		/**
-		 * 左右拖拽调整列顺序、向上拖隐藏列
-		 * @param myTable
-		 */
-		, drag: function (myTable) {
+        /**
+         * 左右拖拽调整列顺序、向上拖隐藏列
+         * @param myTable
+         */
+        , drag: function (myTable) {
             var _this = this,
                 $table = $(myTable.elem),
                 $tableHead = $table.next().children('.layui-table-box').children('.layui-table-header').children('table'),
