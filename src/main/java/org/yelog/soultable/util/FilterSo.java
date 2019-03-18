@@ -31,6 +31,10 @@ public class FilterSo {
 	 */
 	private String type;
 	/**
+	 * 是否有分隔符
+	 */
+	private String split;
+	/**
 	 * 筛选值
 	 */
 	private String value;
@@ -82,6 +86,14 @@ public class FilterSo {
 
 	public void setType(String type) {
 		this.type = type;
+	}
+
+	public String getSplit() {
+		return split;
+	}
+
+	public void setSplit(String split) {
+		this.split = split;
 	}
 
 	public String getValue() {

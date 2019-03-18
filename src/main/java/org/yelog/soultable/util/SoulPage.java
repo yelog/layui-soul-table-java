@@ -4,7 +4,6 @@ import com.alibaba.fastjson.JSON;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.commons.lang3.StringUtils;
 
-import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -155,7 +154,6 @@ public class SoulPage<T> {
             while (it.hasNext()) {
                 Map.Entry<String, Set<String>> entry = it.next();
                 ArrayList<String> list = new ArrayList<>(entry.getValue());
-                list.sort(this::compare);
                 columnSortMap.put(entry.getKey(), list);
             }
             return columnSortMap;
@@ -291,15 +289,6 @@ public class SoulPage<T> {
             return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(date);
         } else {
             return new SimpleDateFormat(format).format(date);
-        }
-    }
-    private int compare(String a, String b) {
-        try {
-            BigDecimal newA = new BigDecimal(a);
-            BigDecimal newB = new BigDecimal(b);
-            return newA.compareTo(newB);
-        } catch (Exception e) {
-            return StringUtils.compare(a, b);
         }
     }
 }

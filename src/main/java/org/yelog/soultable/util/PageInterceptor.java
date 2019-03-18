@@ -189,11 +189,35 @@ public class PageInterceptor implements Interceptor {
                                 .append("')");
                         break;
                     default:
-                        filterSql.append(" ")
-                                .append(field)
-                                .append(" in ('")
-                                .append(StringUtils.join(filterSo.getValues(), "','"))
-                                .append("')");
+                        if (StringUtils.isBlank(filterSo.getSplit())) {
+                            filterSql.append(" ")
+                                    .append(field)
+                                    .append(" in ('")
+                                    .append(StringUtils.join(filterSo.getValues(), "','"))
+                                    .append("')");
+                        } else {
+                            //todo 兼容value值内包含正则特殊字符
+                            if (DB_DIALECT.ORACLE.name().equalsIgnoreCase(dbType)) {
+                                filterSql.append(" regexp_like(")
+                                        .append(field)
+                                        .append(", '");
+                                for (String filterSoValue : filterSo.getValues()) {
+                                    filterSql.append("("+filterSo.getSplit()+"|^){1}"+filterSoValue+"("+filterSo.getSplit()+"|$){1}|");
+                                }
+                                filterSql.deleteCharAt(filterSql.length()-1);
+                                filterSql.append("')");
+                            } else {
+                                filterSql.append(" ")
+                                        .append(field)
+                                        .append(" regexp '(");
+                                for (String filterSoValue : filterSo.getValues()) {
+                                    filterSql.append("("+filterSo.getSplit()+"|^){1}"+filterSoValue+"("+filterSo.getSplit()+"|$){1}|");
+                                }
+                                filterSql.deleteCharAt(filterSql.length()-1);
+                                filterSql.append(")+'");
+                            }
+                        }
+
                         break;
                 }
                 break;
