@@ -66,7 +66,7 @@ layui.define(['tableFilter', 'tableChild'], function (exports) {
                             });
 
                             // 移动事件
-                            $(document).on('mousemove', function (e) {
+                            $('body').on('mousemove', function (e) {
                                 if (isStart && $cloneHead) {
                                     if (!isDraging) {
                                         $this.after($cloneHead);
@@ -106,7 +106,7 @@ layui.define(['tableFilter', 'tableChild'], function (exports) {
                                             var x, y;
                                             for (var i = 0; i < myTable.cols.length; i++) {
                                                 for (var j = 0; j < myTable.cols[i].length; j++) {
-                                                    if (myTable.cols[i][j].field == $this.data('field')) {
+                                                    if (myTable.cols[i][j].key == $this.data('key').substring(2)) {
                                                         x = i;
                                                         y = j;
                                                         break;
@@ -132,7 +132,7 @@ layui.define(['tableFilter', 'tableChild'], function (exports) {
                                             var x, y;
                                             for (var i = 0; i < myTable.cols.length; i++) {
                                                 for (var j = 0; j < myTable.cols[i].length; j++) {
-                                                    if (myTable.cols[i][j].field == $this.data('field')) {
+                                                    if (myTable.cols[i][j].key == $this.data('key').substring(2)) {
                                                         x = i;
                                                         y = j;
                                                         break;
@@ -181,6 +181,7 @@ layui.define(['tableFilter', 'tableChild'], function (exports) {
                                 if (isStart && $cloneHead) {
                                     isStart = false;
                                     $(document).unbind("selectstart");
+                                    $('body').off('mousemove')
                                     if (isDraging) {
                                         $that.on('click', function (e) {
                                             e.stopPropagation();
@@ -192,7 +193,7 @@ layui.define(['tableFilter', 'tableChild'], function (exports) {
                                             'left': 'inherit',
                                             'border-left': 'inherit'
                                         });
-                                        $cloneHead.remove();
+                                        $this.next().remove();
                                         $tableBody.find('td[data-field=' + $this.data('field') + '][data-clone]').each(function (e) {
                                             $(this).prev().css({
                                                 'position': 'relative',

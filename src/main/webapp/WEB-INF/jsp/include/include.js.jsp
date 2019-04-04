@@ -1,6 +1,6 @@
 <%--标签 --%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<c:set var="static_version" value="1.6.3.7" />
+<c:set var="static_version" value="1.1" />
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <link rel="stylesheet" type="text/css" href="${staticPath}/layui/css/layui.css?v=${static_version}" media="all"/>
