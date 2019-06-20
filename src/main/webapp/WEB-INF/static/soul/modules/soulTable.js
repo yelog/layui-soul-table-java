@@ -4,22 +4,33 @@
  * @author: 杨玉杰
  * @version: 1.0
  */
-layui.define(['tableFilter', 'tableChild'], function (exports) {
+layui.define(['table', 'tableFilter', 'tableChild'], function (exports) {
 
     var tableFilter = layui.tableFilter,
         tableChild = layui.tableChild,
         $ = layui.$,
-        HIDE = 'layui-hide';
+        table = layui.table,
+        HIDE = 'layui-hide',
+        isFirst = true; // 第一次加载表格
 
     // 封装方法
     var mod = {
         render: function (myTable) {
-            tableFilter.render(myTable);
-            tableChild.render(myTable);
+            var curTableSession = localStorage.getItem(location.pathname + myTable.id);
 
-            if (typeof myTable.drag == 'undefined' || myTable.drag) {
-                this.drag(myTable);
+            if (myTable.filter && myTable.filter.cache && isFirst && curTableSession) {
+                myTable.cols = this.deepParse(curTableSession);
+                isFirst = false;
+                table.reload(myTable.id, myTable)
+            } else {
+                tableFilter.render(myTable);
+                tableChild.render(myTable);
+
+                if (typeof myTable.drag == 'undefined' || myTable.drag) {
+                    this.drag(myTable);
+                }
             }
+
         }
         , export: function (myTable, curExcel) {
             tableFilter.export(myTable.config, curExcel);
@@ -38,10 +49,22 @@ layui.define(['tableFilter', 'tableChild'], function (exports) {
                 tableId = $table.attr('id'),
                 isDraging = false, isStart = false;
 
+            var fieldMap = {};
+            for (var i = 0; i < columns.length; i++) {
+                if (columns[i].field) {
+                    fieldMap[columns[i]['field']] = columns[i]
+                } else if (columns[i].type==='numbers') {
+                    fieldMap[i] = columns[i]
+                }
+            }
+
             if (!$tableHead.attr('drag')) {
                 $tableHead.attr('drag', true);
                 $tableHead.find('th').each(function () {
                     var $this = $(this);
+                    if (!fieldMap[$this.data('field')] || fieldMap[$this.data('field')].fixed) {
+                        return true;
+                    }
                     // 绑定鼠标按下事件
                     $(this).find('span:first')
                         .css('cursor', 'move')
@@ -107,7 +130,9 @@ layui.define(['tableFilter', 'tableChild'], function (exports) {
                                         leftMove = $cloneHead.position().left - left > $cloneHead.prev().prev().width() / 2.0,
                                         rightMove = left - $cloneHead.position().left > $cloneHead.next().width() / 2.0;
                                     moveDistince = Math.abs($cloneHead.position().left - left); //记录移动距离
-                                    if ($cloneHead.position().left - left > 0 ? myTable.cols[$cloneHead.prev().prev().data('key').split('-')[1]][$cloneHead.prev().prev().data('key').split('-')[2]].fixed : myTable.cols[$cloneHead.prev().prev().data('key').split('-')[1]][$cloneHead.next().data('key').split('-')[2]].fixed) {
+                                    if ($cloneHead.position().left - left > 0
+                                        ? myTable.cols[$cloneHead.prev().prev().data('key').split('-')[1]][$cloneHead.prev().prev().data('key').split('-')[2]].fixed ||['checkbox','radio'].indexOf(myTable.cols[$cloneHead.prev().prev().data('key').split('-')[1]][$cloneHead.prev().prev().data('key').split('-')[2]].type)!==-1
+                                        : myTable.cols[$cloneHead.prev().prev().data('key').split('-')[1]][$cloneHead.next().data('key').split('-')[2]].fixed || ['checkbox','radio'].indexOf(myTable.cols[$cloneHead.prev().prev().data('key').split('-')[1]][$cloneHead.next().data('key').split('-')[2]].type)!==-1) {
                                         $this.css('left',$cloneHead.position().left);
                                         $tableBody.find('td[data-field=' + $this.data('field') + '][data-clone]').each(function (e) {
                                             $(this).prev().css('left', $cloneHead.position().left);
@@ -144,7 +169,9 @@ layui.define(['tableFilter', 'tableChild'], function (exports) {
                                             var tempCols = myTable.cols[x][y - 1];
                                             myTable.cols[x][y - 1] = myTable.cols[x][y];
                                             myTable.cols[x][y] = tempCols;
-
+                                            if (myTable.filter && myTable.filter.cache) {
+                                                localStorage.setItem(location.pathname + myTable.id, _this.deepStringify(myTable.cols))
+                                            }
                                         }
                                     } else if (!$cloneHead.next().hasClass('layui-table-patch') && rightMove) {
                                         if ($cloneHead.next().length != 0) {
@@ -170,7 +197,9 @@ layui.define(['tableFilter', 'tableChild'], function (exports) {
                                             var tempCols = myTable.cols[x][y + 1];
                                             myTable.cols[x][y + 1] = myTable.cols[x][y];
                                             myTable.cols[x][y] = tempCols;
-
+                                            if (myTable.filter && myTable.filter.cache) {
+                                                localStorage.setItem(location.pathname + myTable.id, _this.deepStringify(myTable.cols))
+                                            }
                                         }
                                     }
 
@@ -219,10 +248,10 @@ layui.define(['tableFilter', 'tableChild'], function (exports) {
                                     }
                                 }
                             }).on('mouseup', function () {
+                                $(document).unbind("selectstart");
+                                $('body').off('mousemove').off('mouseup')
                                 if (isStart && $cloneHead) {
                                     isStart = false;
-                                    $(document).unbind("selectstart");
-                                    $('body').off('mousemove')
                                     if (isDraging) {
                                         $that.on('click', function (e) {
                                             e.stopPropagation();
@@ -273,6 +302,9 @@ layui.define(['tableFilter', 'tableChild'], function (exports) {
                                                 columns[i]['hide'] = true;
                                             }
                                         }
+                                        if (myTable.filter && myTable.filter.cache) {
+                                            localStorage.setItem(location.pathname + myTable.id, _this.deepStringify(myTable.cols))
+                                        }
                                         // 更新下拉隐藏
                                         $('#soul-columns' + tableId).find('li[data-value="' + $this.data('field') + '"]>input').prop('checked', false);
                                     }
@@ -283,6 +315,31 @@ layui.define(['tableFilter', 'tableChild'], function (exports) {
                 })
             }
         },
+        deepStringify: function (obj) {
+            var JSON_SERIALIZE_FIX = {
+                PREFIX : "[[JSON_FUN_PREFIX_",
+                SUFFIX : "_JSON_FUN_SUFFIX]]"
+            };
+            return JSON.stringify(obj,function(key, value){
+                if(typeof value === 'function'){
+                    return JSON_SERIALIZE_FIX.PREFIX+value.toString()+JSON_SERIALIZE_FIX.SUFFIX;
+                }
+                return value;
+            });
+        },
+        deepParse: function (str) {
+            var JSON_SERIALIZE_FIX = {
+                PREFIX : "[[JSON_FUN_PREFIX_",
+                SUFFIX : "_JSON_FUN_SUFFIX]]"
+            };
+            return JSON.parse(str,function(key, value){
+                if(typeof value === 'string' &&
+                    value.indexOf(JSON_SERIALIZE_FIX.SUFFIX)>0 && value.indexOf(JSON_SERIALIZE_FIX.PREFIX)==0){
+                    return eval("("+value.replace(JSON_SERIALIZE_FIX.PREFIX,"").replace(JSON_SERIALIZE_FIX.SUFFIX,"")+")");
+                }
+                return value;
+            })||{};
+        }
 
     }
 

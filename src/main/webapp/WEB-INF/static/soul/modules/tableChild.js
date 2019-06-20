@@ -42,44 +42,47 @@ layui.define(['table', 'tableFilter' ,'element', 'form'], function (exports) {
 
                 $tableBody.children('tbody').children('tr').children('td').children('.childTable').on('click', function () {
                     var data = table.cache[myTable.id][$(this).parents('tr:eq(0)').data('index')];
-                    if (child.show == 2) { // 展开模式
+                    if (child.show == 2) { // 弹窗模式
 
                         layer.open({type: 1, title: '子表', maxmin: true ,content: _this.getTables(this, data, child, myTable), area: '1000px', offset: '100px'});
                         _this.renderTable(this, data, child, tableId);
 
-                    } else { // 弹窗模式
+                    } else { // 展开模式
 
                         $(this).find('i').toggleClass('layui-icon-down');
-                        var rowspanIndex=$(this).parents('td').attr("rowspan");
+                        var rowspanIndex=$(this).parents('td:eq(0)').attr("rowspan");
 
                         if ($(this).find('i').hasClass('layui-icon-down')) {
                             var newTr = [];
-                            newTr.push('<tr class="noHover childTr"><td colspan="'+$tableHead.find('th:visible').length+'" style="padding: 0; width: '+$(this).parents('tr').width()+'px">');
+                            newTr.push('<tr class="noHover childTr"><td colspan="'+$tableHead.find('th:visible').length+'" style="padding: 0; width: '+$(this).parents('tr:eq(0)').width()+'px">');
                             newTr.push(_this.getTables(this, data, child, myTable));
 
                             newTr.push('</td></tr>');
 
                             if(rowspanIndex){
-                                var index=parseInt($(this).parents('tr').data("index"))+parseInt(rowspanIndex)-1;
-                                $(this).parents('table').children().children("[data-index='"+index+"']").after(newTr.join(''));
+                                var index=parseInt($(this).parents('tr:eq(0)').data("index"))+parseInt(rowspanIndex)-1;
+                                $(this).parents('table:eq(0)').children().children("[data-index='"+index+"']").after(newTr.join(''));
                             }else{
-                                $(this).parents('tr').after(newTr.join(''));
+                                $(this).parents('tr:eq(0)').after(newTr.join(''));
                             }
                             _this.renderTable(this, data, child, tableId);
                         } else {
                             if(rowspanIndex){
-                                var index=$(this).parents('tr').index()+parseInt(rowspanIndex);
-                                $(this).parents('table').children().children('tr:eq('+index+')').remove()
+                                var index=$(this).parents('tr:eq(0)').index()+parseInt(rowspanIndex);
+                                $(this).parents('table:eq(0)').children().children('tr:eq('+index+')').remove()
                             }else{
-                                $(this).parents('tr').next().remove();
+                                $(this).parents('tr:eq(0)').next().remove();
                             }
-                            var tables = tableChildren[tableId + $(this).parents('tr').data('index')];
+                            var tables = tableChildren[tableId + $(this).parents('tr:eq(0)').data('index')];
                             tableFilter.destroy(tables);
-                            delete tableChildren[tableId + $(this).parents('tr').data('index')]
+                            delete tableChildren[tableId + $(this).parents('tr:eq(0)').data('index')]
                         }
 
                     }
                 })
+                if (child.spread && child.show!=2) {
+                    $tableBody.children('tbody').children('tr').children('td').children('.childTable').trigger('click');
+                }
 
             }
         },
@@ -102,7 +105,7 @@ layui.define(['table', 'tableFilter' ,'element', 'form'], function (exports) {
             }
             tables.push('</ul><div class="layui-tab-content" style="padding-bottom: 10px;max-width: '+($tableBody.width()-2)+'px">');
             for (var i=0;i<child.children.length;i++) {
-                var childTableId = tableId + $(_this).parents('tr').data('index') + i;
+                var childTableId = tableId + $(_this).parents('tr:eq(0)').data('index') + i;
                 tables.push('<div class="layui-tab-item layui-show"><form action="" class="layui-form" ><table id="'+childTableId+'" lay-filter="'+childTableId+'"></table></form></div>');
             }
             tables.push('</div></div>');
@@ -120,17 +123,19 @@ layui.define(['table', 'tableFilter' ,'element', 'form'], function (exports) {
             for (var i=0;i<child.children.length;i++) {
                 (function () {
                     var param = _that.cloneJSON(child.children[i]),
-                        childTableId = tableId + $(_this).parents('tr').data('index') + i;
+                        childTableId = tableId + $(_this).parents('tr:eq(0)').data('index') + i;
                     param.where = child.children[i].where;
                     param.data = child.children[i].data;
+                    param.url = child.children[i].url;
                     param.toolEvent = child.children[i].toolEvent;
                     param.id = childTableId;
                     param.elem = '#'+childTableId;
                     typeof param.where === 'function' && (param.where = param.where(data));
                     typeof param.data === 'function' && (param.data = param.data(data));
+                    typeof param.url === 'function' && (param.url = param.url(data));
                     tables.push(table.render(param));
                     if (i!=0) {
-                        $('#'+childTableId).parents('.layui-tab-item').removeClass('layui-show'); //解决隐藏时计算表格高度有问题
+                        $('#'+childTableId).parents('.layui-tab-item:eq(0)').removeClass('layui-show'); //解决隐藏时计算表格高度有问题
                     }
                     if (typeof param.toolEvent == 'function') {
                         table.on('tool('+childTableId+')', function (obj) {
@@ -139,7 +144,7 @@ layui.define(['table', 'tableFilter' ,'element', 'form'], function (exports) {
                     }
                 }());
             }
-            tableChildren[tableId + $(_this).parents('tr').data('index')]=tables
+            tableChildren[tableId + $(_this).parents('tr:eq(0)').data('index')]=tables
         },
         cloneJSON: function (obj) {
             var JSON_SERIALIZE_FIX = {
