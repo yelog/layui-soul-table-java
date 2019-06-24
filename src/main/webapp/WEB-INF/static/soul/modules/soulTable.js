@@ -19,9 +19,9 @@ layui.define(['table', 'tableFilter', 'tableChild'], function (exports) {
             var curTableSession = localStorage.getItem(location.pathname + myTable.id);
 
             if (myTable.filter && myTable.filter.cache && isFirst && curTableSession) {
-                myTable.cols = this.deepParse(curTableSession);
-                isFirst = false;
-                table.reload(myTable.id, myTable)
+               myTable.cols = this.deepParse(curTableSession);
+               isFirst = false;
+               table.reload(myTable.id, myTable)
             } else {
                 tableFilter.render(myTable);
                 tableChild.render(myTable);
