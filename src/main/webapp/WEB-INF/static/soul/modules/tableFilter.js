@@ -150,6 +150,7 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
              */
             if (!initFilter || isFilterReload[myTable.id] || myTable.isSoulFrontFilter) {
                 isFilterReload[myTable.id] = false
+                myTable['isSoulFrontFilter'] = false
                 this.bindFilterClick(myTable);
                 return;
             } else {
@@ -2632,7 +2633,7 @@ layui.define(['table', 'form', 'laydate', 'util', 'excel'], function (exports) {
                 return value;
             });
         }
-
+        ,cache: cache
     };
 
     // 输出
