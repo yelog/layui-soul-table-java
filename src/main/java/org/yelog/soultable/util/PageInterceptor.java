@@ -1,5 +1,9 @@
 package org.yelog.soultable.util;
 
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.core.toolkit.PluginUtils;
+import com.baomidou.mybatisplus.extension.handlers.AbstractSqlParserHandler;
+import net.sf.jsqlparser.schema.Column;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.executor.parameter.ParameterHandler;
 import org.apache.ibatis.executor.statement.StatementHandler;
@@ -7,12 +11,12 @@ import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.ResultMapping;
 import org.apache.ibatis.plugin.*;
-import org.apache.ibatis.reflection.DefaultReflectorFactory;
 import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.reflection.SystemMetaObject;
 import org.apache.ibatis.session.RowBounds;
 import org.apache.log4j.Logger;
 
+import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -23,7 +27,7 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
- *  tableFilter的mybatis拦截器
+ *  tableFilter的mybatis拦截器（mybatis-plus 版）
  *  支持：
  *  1、表头筛选
  *  2、分页
@@ -33,7 +37,7 @@ import java.util.Properties;
  * @version 1.0
  */
 @Intercepts({@Signature(type= StatementHandler.class,method="prepare",args={Connection.class,Integer.class})})
-public class PageInterceptor implements Interceptor {
+public class PageInterceptor extends AbstractSqlParserHandler implements Interceptor {
     public static Logger log = Logger.getLogger(PageInterceptor.class);
     private String dbType;
 
@@ -49,9 +53,12 @@ public class PageInterceptor implements Interceptor {
 
     @Override
     public Object intercept(Invocation invocation) throws Throwable {
-        StatementHandler statementHandler = (StatementHandler)invocation.getTarget();
-        //通过MetaObject优雅访问对象的属性，这里是访问statementHandler的属性
-        MetaObject metaObject = MetaObject.forObject(statementHandler, SystemMetaObject.DEFAULT_OBJECT_FACTORY, SystemMetaObject.DEFAULT_OBJECT_WRAPPER_FACTORY, new DefaultReflectorFactory());
+        // mybatis-plus 版 获取方式
+        StatementHandler statementHandler = PluginUtils.realTarget(invocation.getTarget());
+        MetaObject metaObject = SystemMetaObject.forObject(statementHandler);
+        // SQL 解析
+        this.sqlParser(metaObject);
+
         //先拦截到RoutingStatementHandler，里面有个StatementHandler类型的delegate变量，其实现类是BaseStatementHandler，然后就到BaseStatementHandler的成员变量mappedStatement
         MappedStatement mappedStatement = (MappedStatement)metaObject.getValue("delegate.mappedStatement");
         // 配置文件中SQL语句的ID
@@ -85,6 +92,17 @@ public class PageInterceptor implements Interceptor {
                     if (mappedStatement.getResultMaps().get(0).getResultMappings().size()>0) {
                         for (ResultMapping resultMapping : mappedStatement.getResultMaps().get(0).getResultMappings()) {
                             fieldMap.put(resultMapping.getProperty(),resultMapping.getColumn());
+                        }
+                    } else if (mappedStatement.getResultMaps().get(0).getType() != null) {
+                        // 兼容 tableField 的写法
+                        Field[] fields = mappedStatement.getResultMaps().get(0).getType().getDeclaredFields();
+                        for (Field field : fields) {
+                            TableField tableField = field.getAnnotation(TableField.class);
+                            if (tableField == null) {
+                                fieldMap.put(field.getName(), field.getName());
+                            } else {
+                                fieldMap.put(field.getName(), tableField.value());
+                            }
                         }
                     }
                     /**

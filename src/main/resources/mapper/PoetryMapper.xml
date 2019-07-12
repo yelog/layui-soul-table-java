@@ -2,17 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="org.yelog.soultable.mapper.PoetryMapper" >
 
-    <resultMap id="baseMap" type="org.yelog.soultable.entity.Poetry">
-        <result property="id" column="id" />
-        <result property="title" column="title" />
-        <result property="dynasty" column="dynasty" />
-        <result property="author" column="author" />
-        <result property="content" column="content" />
-        <result property="type" column="type" />
-        <result property="heat" column="heat" />
-        <result property="createTime" column="create_time" />
-    </resultMap>
-    <select id="dataGrid" resultMap="baseMap">
+    <select id="dataGrid" resultType="org.yelog.soultable.entity.Poetry">
         select
           id, title, dynasty, author, content, type, heat, create_time
         from
