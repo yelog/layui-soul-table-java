@@ -50,7 +50,7 @@
             <array>
                 <bean class="com.baomidou.mybatisplus.extension.plugins.PerformanceInterceptor"></bean>
                 <bean class="com.baomidou.mybatisplus.extension.plugins.PaginationInterceptor"></bean>
-                <bean class="org.yelog.soultable.util.PageInterceptor">
+                <bean class="org.yelog.soultable.util.SoulTableInterceptor">
                     <property name="dbType" value="mysql" />
                 </bean>
             </array>

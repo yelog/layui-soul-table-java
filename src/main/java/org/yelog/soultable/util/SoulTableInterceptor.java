@@ -3,7 +3,6 @@ package org.yelog.soultable.util;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.core.toolkit.PluginUtils;
 import com.baomidou.mybatisplus.extension.handlers.AbstractSqlParserHandler;
-import net.sf.jsqlparser.schema.Column;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.executor.parameter.ParameterHandler;
 import org.apache.ibatis.executor.statement.StatementHandler;
@@ -37,8 +36,8 @@ import java.util.Properties;
  * @version 1.0
  */
 @Intercepts({@Signature(type= StatementHandler.class,method="prepare",args={Connection.class,Integer.class})})
-public class PageInterceptor extends AbstractSqlParserHandler implements Interceptor {
-    public static Logger log = Logger.getLogger(PageInterceptor.class);
+public class SoulTableInterceptor extends AbstractSqlParserHandler implements Interceptor {
+    public static Logger log = Logger.getLogger(SoulTableInterceptor.class);
     private String dbType;
 
 	private enum DB_DIALECT {ORACLE, MYSQL};
