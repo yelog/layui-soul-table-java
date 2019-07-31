@@ -16,10 +16,10 @@ soulTable的前台使用方法跳转到[https://github.com/yelog/layui-soul-tabl
 
 ### 2.将插件引入项目
 1）前端插件（js、css）的引入参考[soulTable](https://github.com/yelog/layui-soul-table)
-2) 将文件 `FilterSo` `PageInterceptor` `ReflectHelper` `SoulPage` 复制到自己的项目中。（文件位置`src/main/java/org/yelog/soultable/util/`）
+2) 将文件 `FilterSo` `SoulTableInterceptor` `ReflectHelper` `SoulPage` 复制到自己的项目中。（文件位置`src/main/java/org/yelog/soultable/util/`）
 
 ### 3.配置mybatis拦截器
-在自己项目的 `sqlSessionFactory` 配置中引用插件 `PageInterceptor`， 
+在自己项目的 `sqlSessionFactory` 配置中引用插件 `SoulTableInterceptor`， 
 路径使用上一步自己放的位置，如下，dbType配置自己使用的数据库，目前支持：mysql、oracle
 ```xml
 <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">  
@@ -27,7 +27,7 @@ soulTable的前台使用方法跳转到[https://github.com/yelog/layui-soul-tabl
     <!-- 自动扫描mapping.xml文件 -->  
     <property name="mapperLocations" value="classpath:mapper/*.xml"></property>
     <property name="plugins">
-        <bean class="org.yelog.soultable.util.PageInterceptor"> 
+        <bean class="org.yelog.soultable.util.SoulTableInterceptor"> 
             <property name="dbType" value="mysql" />
         </bean>
     </property>

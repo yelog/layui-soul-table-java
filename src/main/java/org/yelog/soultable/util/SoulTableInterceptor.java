@@ -33,8 +33,8 @@ import java.util.Properties;
  * @version 1.0
  */
 @Intercepts({@Signature(type= StatementHandler.class,method="prepare",args={Connection.class,Integer.class})})
-public class PageInterceptor implements Interceptor {
-    public static Logger log = Logger.getLogger(PageInterceptor.class);
+public class SoulTableInterceptor implements Interceptor {
+    public static Logger log = Logger.getLogger(SoulTableInterceptor.class);
     private String dbType;
 
 	private enum DB_DIALECT {ORACLE, MYSQL};
