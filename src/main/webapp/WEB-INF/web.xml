@@ -4,9 +4,9 @@
   <!-- 读取spring配置文件 -->
 	<context-param>
 		<param-name>contextConfigLocation</param-name>
-		<param-value>classpath:applicationContext.xml</param-value>
+		<param-value>classpath:spring-mvc.xml</param-value>
 	</context-param>
-	
+
 	<!-- 设计路径变量值 
 	<context-param>
 		<param-name>webAppRootKey</param-name>

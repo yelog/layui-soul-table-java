@@ -1,141 +1,86 @@
 package org.yelog.soultable.util;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.ibatis.executor.parameter.ParameterHandler;
-import org.apache.ibatis.executor.statement.StatementHandler;
-import org.apache.ibatis.mapping.BoundSql;
-import org.apache.ibatis.mapping.MappedStatement;
-import org.apache.ibatis.mapping.ResultMapping;
-import org.apache.ibatis.plugin.*;
-import org.apache.ibatis.reflection.DefaultReflectorFactory;
-import org.apache.ibatis.reflection.MetaObject;
-import org.apache.ibatis.reflection.SystemMetaObject;
-import org.apache.ibatis.session.RowBounds;
-import org.apache.log4j.Logger;
+import org.hibernate.Session;
+import org.yelog.soultable.entity.Poetry;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import javax.persistence.Column;
+import java.lang.reflect.Field;
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 /**
- *  tableFilter的mybatis拦截器
- *  支持：
- *  1、表头筛选
- *  2、分页
- *  3、目前支持数据库：mysql、oracle
- * @author Yelog
- * @date 2019-03-16 22:48
- * @version 1.0
+ * soulTable 筛选处理工具 hibernate 版
+ *
+ * @author yelog
+ * @date 2019-08-01 18:06
+ * @return
  */
-@Intercepts({@Signature(type= StatementHandler.class,method="prepare",args={Connection.class,Integer.class})})
-public class SoulTableInterceptor implements Interceptor {
-    public static Logger log = Logger.getLogger(SoulTableInterceptor.class);
-    private String dbType;
+public class SoulTableTool {
 
-	private enum DB_DIALECT {ORACLE, MYSQL};
+    private enum DB_DIALECT {ORACLE, MYSQL};
 
-    public String getDbType() {
-		return dbType;
-	}
+    /**
+     *
+     * @param session
+     * @param soulPage
+     * @param sql  自己业务的 sql
+     * @param param 业务 sql 中的 条件参数
+     * @param dbType 数据库类型支持两种 MySQL 与 ORACLE
+     * @param <T>
+     * @return
+     */
+    public static <T>Object handle(Session session, SoulPage<T> soulPage, String sql, Map param, String dbType){
 
-	public void setDbType(String dbType) {
-		this.dbType = dbType;
-	}
-
-    @Override
-    public Object intercept(Invocation invocation) throws Throwable {
-        StatementHandler statementHandler = (StatementHandler)invocation.getTarget();
-        //通过MetaObject优雅访问对象的属性，这里是访问statementHandler的属性
-        MetaObject metaObject = MetaObject.forObject(statementHandler, SystemMetaObject.DEFAULT_OBJECT_FACTORY, SystemMetaObject.DEFAULT_OBJECT_WRAPPER_FACTORY, new DefaultReflectorFactory());
-        //先拦截到RoutingStatementHandler，里面有个StatementHandler类型的delegate变量，其实现类是BaseStatementHandler，然后就到BaseStatementHandler的成员变量mappedStatement
-        MappedStatement mappedStatement = (MappedStatement)metaObject.getValue("delegate.mappedStatement");
-        // 配置文件中SQL语句的ID
-        BoundSql boundSql = statementHandler.getBoundSql();
-        // 原始的SQL语句
-        String sql = boundSql.getSql();
-        // 检测未通过，不是select语句
-        if (!checkIsSelectFalg(sql)) {
-            return invocation.proceed();
-        }
-        if (boundSql.getParameterObject() instanceof Map || boundSql.getParameterObject() instanceof SoulPage) {
-            SoulPage soulPage = null;
-            if (boundSql.getParameterObject() instanceof SoulPage) {
-                soulPage = (SoulPage) boundSql.getParameterObject();
-            } else {
-                Map<?,?> parameter = (Map<?,?>)boundSql.getParameterObject();
-                for (Object key : parameter.keySet()) {
-                    if (parameter.get(key) instanceof SoulPage) {
-                        soulPage = (SoulPage) parameter.get(key);
-                    }
-                }
-            }
-
-            // 没有 soulPage 不需要拦截
-            if(soulPage != null) {
-                if (soulPage.isColumn()) {
-                    // 排序
-                    return invocation.proceed();
+        if (soulPage.isColumn()) {
+            // 查询表头数据
+            return soulPage.setData(session.createSQLQuery(sql).addEntity(Poetry.class).setProperties(param).list());
+        } else {
+            // 获取真正的 列名
+            Map<String, String> fieldMap = new HashMap<>();
+            Field[] fields = soulPage.getObj().getClass().getDeclaredFields();
+            for (Field field : fields) {
+                Column column = field.getAnnotation(Column.class);
+                if (column == null || StringUtils.isBlank(column.name())) {
+                    fieldMap.put(field.getName(), field.getName());
                 } else {
-                    Map<String, String> fieldMap = new HashMap<>();
-                    if (mappedStatement.getResultMaps().get(0).getResultMappings().size()>0) {
-                        for (ResultMapping resultMapping : mappedStatement.getResultMaps().get(0).getResultMappings()) {
-                            fieldMap.put(resultMapping.getProperty(),resultMapping.getColumn());
-                        }
-                    }
-                    /**
-                     * 分页
-                     */
-                    StringBuffer filterSql = new StringBuffer("select * from (" + sql + ") A WHERE");
-                    // 获取前端指定类型
-                    Map<String, Map<String, String>> typeMap = soulPage.getTypeMap();
-					List<FilterSo> filterSos = soulPage.getFilterSos();
-					if (filterSos != null) {
-                        filterSos.forEach(filterSo->{
-                            handleFilterSo(filterSo, typeMap, fieldMap, filterSql);
-                        });
-                    }
-					if (StringUtils.endsWith(filterSql, "WHERE")) {
-					    filterSql.setLength(0);
-					    filterSql.append("select * from (").append(sql).append(") A");
-                    }
-
-                    // 排序
-                    if (StringUtils.isNotBlank(soulPage.getField())) {
-                        filterSql.append(" order by ").append(fieldMap.size() > 0 ? fieldMap.get(soulPage.getField()) : soulPage.getField()).append(" ").append(soulPage.getOrder());
-                    }
-
-                    if (soulPage.getLimit()==100000000) {
-                        metaObject.setValue("delegate.boundSql.sql",filterSql.toString());
-                    } else {
-                        // 设置总数
-                        soulPage.setCount(getTotle(invocation, metaObject, filterSql.toString()));
-
-                        // 改造后带分页查询的SQL语句 ORACLE 版
-                        String pageSql;
-
-                        if (DB_DIALECT.ORACLE.name().equalsIgnoreCase(dbType)) {
-                            pageSql = "select * from (select * from ( select A.*,ROWNUM AS SOULROWNUM from ("
-                                    + filterSql.toString() + " ) A) where SOULROWNUM <= " + (soulPage.getOffset() + soulPage.getLimit()) + ") where SOULROWNUM > " + soulPage.getOffset();
-                        } else {
-                            //改造后带分页查询的SQL语句 MYSQL版
-                            pageSql = "select * from (" + filterSql.toString() + " ) A limit " + soulPage.getOffset() + ", " + soulPage.getLimit();
-                        }
-                        metaObject.setValue("delegate.boundSql.sql",pageSql);
-                    }
-
-                    // 采用物理分页后，就不需要mybatis的内存分页了，所以重置下面的两个参数
-                    metaObject.setValue("delegate.rowBounds.offset", RowBounds.NO_ROW_OFFSET);
-                    metaObject.setValue("delegate.rowBounds.limit", RowBounds.NO_ROW_LIMIT);
+                    fieldMap.put(field.getName(), column.name());
                 }
             }
-        }
+            /**
+             * 分页
+             */
+            StringBuffer filterSql = new StringBuffer("select * from (" + sql + ") A WHERE");
+            // 获取前端指定类型
+            Map<String, Map<String, String>> typeMap = soulPage.getTypeMap();
+            List<FilterSo> filterSos = soulPage.getFilterSos();
+            if (filterSos != null) {
+                filterSos.forEach(filterSo->{
+                    handleFilterSo(filterSo, typeMap, filterSql, fieldMap, dbType);
+                });
+            }
+            if (StringUtils.endsWith(filterSql, "WHERE")) {
+                filterSql.setLength(0);
+                filterSql.append("select * from (").append(sql).append(") A");
+            }
 
-        return invocation.proceed();
+            // 排序
+            if (StringUtils.isNotBlank(soulPage.getField())) {
+                filterSql.append(" order by ").append(fieldMap.get(soulPage.getField())).append(" ").append(soulPage.getOrder());
+            }
+
+            if (soulPage.getLimit()==100000000) {
+                return soulPage.setData(session.createSQLQuery(sql).addEntity(Poetry.class).setProperties(param).list());
+            } else {
+                // 设置总数
+                soulPage.setCount(((BigInteger)session.createSQLQuery("select count(*) from (" + filterSql.toString() + ") A").setProperties(param).uniqueResult()).intValue());
+
+                // 查询当前页数据
+                return soulPage.setData(session.createSQLQuery(filterSql.toString()).addEntity(Poetry.class).setProperties(param).setFirstResult(soulPage.getOffset()).setMaxResults(soulPage.getLimit()).list());
+            }
+        }
     }
 
     /**
@@ -145,11 +90,10 @@ public class SoulTableInterceptor implements Interceptor {
      * @date 2019-03-16 22:52
      * @param filterSo
      * @param typeMap
-     * @param fieldMap
      * @param filterSql
      * @return void
      */
-    private void handleFilterSo(FilterSo filterSo, Map<String, Map<String, String>> typeMap, Map<String, String> fieldMap, StringBuffer filterSql) {
+    private static void handleFilterSo(FilterSo filterSo, Map<String, Map<String, String>> typeMap, StringBuffer filterSql, Map<String, String> fieldMap, String dbType) {
         if (!StringUtils.endsWith(filterSql, "(") && !StringUtils.endsWith(filterSql, "WHERE")) {
             filterSql.append(StringUtils.isBlank(filterSo.getPrefix())?" and":" "+filterSo.getPrefix());
         }
@@ -326,7 +270,7 @@ public class SoulTableInterceptor implements Interceptor {
                 filterSql.append(" (");
                 if (filterSo.getChildren().size()>0) {
                     filterSo.getChildren().forEach(f->{
-                        handleFilterSo(f, typeMap, fieldMap ,filterSql);
+                        handleFilterSo(f, typeMap ,filterSql, fieldMap, dbType);
                     });
                 } else {
                     filterSql.append(" 1=1");
@@ -334,63 +278,49 @@ public class SoulTableInterceptor implements Interceptor {
                 filterSql.append(" )");
             default:break;
         }
-
-
 	}
 
-    @Override
-    public Object plugin(Object target) {
-        return Plugin.wrap(target, this);
-    }
-
-    @Override
-    public void setProperties(Properties properties) {
-        this.dbType = properties.getProperty("dbType");
-        if (StringUtils.isEmpty(dbType)) {
-        	dbType = DB_DIALECT.ORACLE.name();
+    /**
+     * 获取obj对象fieldName的Field
+     * @param obj
+     * @param fieldName
+     * @return
+     */
+    public static Field getFieldByFieldName(Object obj, String fieldName) {
+        for (Class<?> superClass = obj.getClass(); superClass != Object.class; superClass = superClass
+                .getSuperclass()) {
+            try {
+                return superClass.getDeclaredField(fieldName);
+            } catch (NoSuchFieldException e) {
+            }
         }
+        return null;
     }
 
     /**
-     * 获取当前sql查询的记录总数
-     *
-     * @author Yelog
-     * @date 2019-03-16 22:53
-     * @param invocation
-     * @param metaObject
-     * @param sql
-     * @return int
+     * 获取obj对象fieldName的属性值
+     * @param obj
+     * @param fieldName
+     * @return
+     * @throws SecurityException
+     * @throws NoSuchFieldException
+     * @throws IllegalArgumentException
+     * @throws IllegalAccessException
      */
-    private int getTotle(Invocation invocation, MetaObject metaObject, String sql) throws SQLException {
-        Connection connection = (Connection)invocation.getArgs()[0];
-        // 查询总条数的SQL语句
-        String countSql = "select count(*) from (" + sql + ") a";
-        //执行总条数SQL语句的查询
-        PreparedStatement countStatement = connection.prepareStatement(countSql);
-        ////获取参数信息即where语句的条件信息，注意上面拿到的sql中参数还是用?代替的
-        ParameterHandler parameterHandler = (ParameterHandler) metaObject.getValue("delegate.parameterHandler");
-        parameterHandler.setParameters(countStatement);
-        ResultSet rs = countStatement.executeQuery();
-
-        if(rs.next()) {
-            return rs.getInt(1);
+    public static Object getValueByFieldName(Object obj, String fieldName)
+            throws SecurityException, NoSuchFieldException,
+            IllegalArgumentException, IllegalAccessException {
+        Field field = getFieldByFieldName(obj, fieldName);
+        Object value = null;
+        if(field!=null){
+            if (field.isAccessible()) {
+                value = field.get(obj);
+            } else {
+                field.setAccessible(true);
+                value = field.get(obj);
+                field.setAccessible(false);
+            }
         }
-        return 0;
+        return value;
     }
-
-    /**
-     * 判断是否是select语句，只有select语句，才会用到分页
-     *
-     * @author Yujie Yang
-     * @date 2019-03-16 22:55
-     * @param sql
-     * @return boolean
-     */
-    private boolean checkIsSelectFalg(String sql) {
-        String trimSql = sql.trim();
-        int index = trimSql.toLowerCase().indexOf("select");
-        return index == 0;
-    }
-
-
 }

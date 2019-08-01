@@ -1,0 +1,52 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+       http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <!-- Specifying base package of the Components like Controller, Service,DAO -->
+    <context:component-scan base-package="org.yelog.soultable" />
+
+
+    <mvc:annotation-driven />
+
+    <!-- 1.配置jdbc文件 -->
+    <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="locations" value="classpath:jdbc.properties"/>
+    </bean>
+
+    <!-- DataSource -->
+    <bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource"
+          destroy-method="close">
+        <property name="driverClass" value="${className}" />
+        <property name="jdbcUrl" value="${url}" />
+        <property name="user" value="${username}" />
+        <property name="password" value="${password}" />
+
+        <property name="acquireIncrement" value="${connection.acquireIncrement}" />
+        <property name="minPoolSize" value="${connection.minPoolSize}" />
+        <property name="maxPoolSize" value="${connection.maxPoolSize}" />
+        <property name="maxIdleTime" value="${connection.maxIdleTime}" />
+    </bean>
+
+    <!-- Hibernate SessionFactory -->
+    <bean id="sessionFactory"
+          class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"></property>
+        <property name="hibernateProperties">
+            <props>
+                <prop key="hibernate.dialect">${hibernate.dialect}</prop>
+                <prop key="hibernate.hbm2ddl.auto">${hibernate.hbm2ddl.auto}</prop>
+                <prop key="hibernate.format_sql">${hibernate.format_sql}</prop>
+                <prop key="hibernate.show_sql">${hibernate.show_sql}</prop>
+            </props>
+        </property>
+        <property name="packagesToScan" value="org.yelog.soultable.entity"></property>
+    </bean>
+
+
+</beans>

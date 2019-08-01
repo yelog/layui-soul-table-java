@@ -1,6 +1,10 @@
 ## layui-soul-table 后台java版
 当前soul-table版本 `v1.0`, layui版本：`v2.4.5`
 
+mybatis版: master分支
+mybatis-plus版: mybatis-plus分支
+hibernate版: hibernate分支
+
 所有筛选demo：[https://yelog.org/layui-soul-table/](https://yelog.org/layui-soul-table/)
 仅后台java版demo：[https://soultable.xiangzhangshugongyi.com/](https://soultable.xiangzhangshugongyi.com/)
 
@@ -10,53 +14,69 @@ soulTable的前台使用方法跳转到[https://github.com/yelog/layui-soul-tabl
 
 这里只讲如何使用后台筛选，喜欢的点个 start， 谢谢🙏
 
-## 快速上手
+## 快速上手 - hibernate
 ### 1.环境基础
-由于插件是基于 `mybatis` 的，所以项目要引用 `mybatis`, 由于引用 `mybatis` 不是本文重点，所以有需要自行网上查找，或参考本项目代码。
+由于插件是基于 `hibernate` 的，所以项目要引用 `hibernate`, 由于引用 `hibernate` 不是本文重点，所以有需要自行网上查找，或参考本项目代码。
 
 ### 2.将插件引入项目
 1）前端插件（js、css）的引入参考[soulTable](https://github.com/yelog/layui-soul-table)
-2) 将文件 `FilterSo` `SoulTableInterceptor` `ReflectHelper` `SoulPage` 复制到自己的项目中。（文件位置`src/main/java/org/yelog/soultable/util/`）
+2) 将文件 `FilterSo` `SoulTableTool` `SoulPage` 复制到自己的项目中。（文件位置`src/main/java/org/yelog/soultable/util/`）
 
-### 3.配置mybatis拦截器
-在自己项目的 `sqlSessionFactory` 配置中引用插件 `SoulTableInterceptor`， 
-路径使用上一步自己放的位置，如下，dbType配置自己使用的数据库，目前支持：mysql、oracle
-```xml
-<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">  
-    <property name="dataSource" ref="dataSource" />  
-    <!-- 自动扫描mapping.xml文件 -->  
-    <property name="mapperLocations" value="classpath:mapper/*.xml"></property>
-    <property name="plugins">
-        <bean class="org.yelog.soultable.util.SoulTableInterceptor"> 
-            <property name="dbType" value="mysql" />
-        </bean>
-    </property>
-</bean>
-```
-### 4.使用
-1) controller 层
->注：poetrySo用于接收自定义的一些查询条件, soulPage的泛型也可使用Map：比如 `dataGrid(SoulPage<Map<String, Object>> soulPage, String name, String title)`
-这里把查询条件塞到`soulPage.obj`中只是为了向service层传值方便。
-
+### 3.配置到 BaseDaoImpl 中通用使用
+在 BaseDaoImpl 中 声明一个通用查询方法，比如： `soulDataGrid` ，配置进去 `session` 与 数据库类型 即可
 ```java
+public Object soulDataGrid(SoulPage<T> soulPage, String sql, Map<String, Object> param) {
+    return SoulTableTool.handle(getSession(), soulPage, sql, param, "MYSQL");
+}
+```
+### 4.controller 层 接收参数
+```java
+/**
+ * 表格数据请求
+ *
+ * @author yelog
+ * @date 2019-08-01 17:03
+ * @param soulPage 接收表头筛选条件、分页条件
+ * @param poetry 接收定义的查询条件 （注意：没有自定义的表单条件，也建议写上，为了初始化 soulPage.obj ，用于反射获取 类信息）
+ * @return java.lang.Object
+ */
 @RequestMapping("/poetry/dataGrid")
 @ResponseBody
-public Object dataGrid(SoulPage<Poetry> soulPage, PoetrySo poetrySo) {
-    soulPage.setObj(poetrySo);
+public Object dataGrid(SoulPage<Poetry> soulPage, Poetry poetry) {
+    soulPage.setObj(poetry);
     return poetryService.dataGrid(soulPage);
 }
 ```
-2) service 层
+### 4.server层就可以直接调用
 ```java
 @Override
 public Object dataGrid(SoulPage<Poetry> soulPage) {
-    return soulPage.setData(poetryMapper.dataGrid(soulPage,(PoetrySo) soulPage.getObj()));
+
+    // 拼接自己的业务逻辑
+    StringBuilder sql = new StringBuilder();
+    sql.append("select * from poetry where 1=1");
+
+    // 获取表单条件（自己定义的 form 表单数据，没有可以不写）
+    Poetry poetry = soulPage.getObj();
+    Map<String, Object> param = new HashMap<>();
+    if (poetry != null) {
+        if (StringUtils.isNotBlank(poetry.getTitle())) {
+            sql.append(" and title like :title");
+            param.put("title", "%" + poetry.getTitle() + "%");
+        }
+        if (StringUtils.isNotBlank(poetry.getContent())) {
+            sql.append(" and content like :content");
+            param.put("content", "%" + poetry.getContent() + "%");
+        }
+        if (StringUtils.isNotBlank(poetry.getStartTime()) && StringUtils.isNotBlank(poetry.getEndTime())) {
+            sql.append(" and create_time between :startTime and :endTime");
+            param.put("startTime", poetry.getStartTime());
+            param.put("endTime", poetry.getEndTime());
+        }
+    }
+    // 拼接完成自己的业务sql，调用工具方法返回
+    return poetryDao.soulDataGrid(soulPage, sql.toString(), param);
 }
-```
-3）Dao 层
-注：查询语句的第一参数必须是：`soulPage`
-```java
-    List<Poetry> dataGrid(SoulPage<Poetry> soulPage, @Param("so") PoetrySo poetrySo);
 ```
 
 ## 最后

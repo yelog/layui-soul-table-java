@@ -10,11 +10,11 @@ import java.util.*;
 /**
  * 封装table查询数据
  *
- * @author Yujie Yang
+ * @author yelog
  * @date 2018/7/17 18:42
  * @return
  */
-public class SoulPage<T> {
+public class SoulPage<T>{
 
     /**
      * layui表格必须参数⬇⬇⬇⬇⬇⬇
@@ -137,7 +137,7 @@ public class SoulPage<T> {
                         columnObject = ((Map<String, ?>)datum).get(column);
                     } else {
                         try {
-                            columnObject = ReflectHelper.getValueByFieldName(datum, column);
+                            columnObject = SoulTableTool.getValueByFieldName(datum, column);
                         } catch (NoSuchFieldException e) {
                             e.printStackTrace();
                         } catch (IllegalAccessException e) {

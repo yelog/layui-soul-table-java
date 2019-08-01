@@ -5,7 +5,7 @@ import java.util.List;
 /**
  * 表头筛选条件实体类
  *
- * @author Yujie Yang
+ * @author yelog
  * @date 2019-01-02 10:00
  */
 public class FilterSo {
