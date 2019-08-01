@@ -1,9 +1,9 @@
 ## layui-soul-table 后台java版
 当前soul-table版本 `v1.0`, layui版本：`v2.4.5`
 
-mybatis版: master分支
-mybatis-plus版: mybatis-plus分支
-hibernate版: hibernate分支
+mybatis版: master分支  
+mybatis-plus版: mybatis-plus分支  
+hibernate版: hibernate分支  
 
 所有筛选demo：[https://yelog.org/layui-soul-table/](https://yelog.org/layui-soul-table/)
 仅后台java版demo：[https://soultable.xiangzhangshugongyi.com/](https://soultable.xiangzhangshugongyi.com/)
