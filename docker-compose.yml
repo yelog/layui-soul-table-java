@@ -1,0 +1,24 @@
+version: '2'
+services:
+  soul-mysql:
+    build:
+      context: ./db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    restart: always
+    container_name: soul-mysql
+    hostname: soul-mysql
+    image: soul-mysql
+    ports:
+      - 3306:3306
+  soul-table-java:
+    build:
+      context: ./
+    restart: always
+    depends_on:
+      - soul-mysql
+    ports:
+      - 8080:8080
+    container_name: soul-table-java
+    hostname: soul-table-java
+    image: soul-table-java

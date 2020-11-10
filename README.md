@@ -63,6 +63,18 @@ public Object dataGrid(SoulPage<Poetry> soulPage) {
     List<Poetry> dataGrid(SoulPage<Poetry> soulPage, @Param("so") PoetrySo poetrySo);
 ```
 
+## 本项目部署
+### docker方式
+需要安装 `docker` 和 `docker-compose`
+```bash
+# 编译项目生成 war包
+mvn clean package  -Dmaven.test.skip=true
+# 根据 docker-cokmpose.yml 构建镜像
+docker-compose build
+# 启动
+docker-compose up -d
+```
+
 ## 最后
 
 当然具体的可以clone下来代码查看，有问题可以在 issue 区提问，我会尽可能快的回复。
