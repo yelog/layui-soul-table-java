@@ -11,7 +11,7 @@ services:
     image: soul-mysql
     ports:
       - 3306:3306
-    mem_limit: 200m
+    mem_limit: 400m
 
 
   soul-table-java:
@@ -25,4 +25,4 @@ services:
     container_name: soul-table-java
     hostname: soul-table-java
     image: soul-table-java
-    mem_limit: 400m
+    mem_limit: 200m
