@@ -4,7 +4,7 @@ services:
     build:
       context: ./db
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: Soul-table-123
     restart: always
     container_name: soul-mysql
     hostname: soul-mysql
