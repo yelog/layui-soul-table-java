@@ -25,4 +25,4 @@ services:
     container_name: soul-table-java
     hostname: soul-table-java
     image: soul-table-java
-    mem_limit: 200m
+    mem_limit: 400m
