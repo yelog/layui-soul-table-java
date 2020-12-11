@@ -1,4 +1,4 @@
-FROM moxm/java:1.8-full as builder
+FROM moxm/java as builder
 
 MAINTAINER jaytp@qq.com
 
