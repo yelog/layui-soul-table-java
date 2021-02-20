@@ -154,7 +154,7 @@ public class SoulTableInterceptor implements Interceptor {
             filterSql.append(StringUtils.isBlank(filterSo.getPrefix())?" and":" "+filterSo.getPrefix());
         }
 
-        String field = fieldMap.size()>0?fieldMap.get(filterSo.getField()):filterSo.getField();
+        String field = fieldMap.size()>0? (fieldMap.get(filterSo.getField()) != null ? fieldMap.get(filterSo.getField()) : filterSo.getField()) :filterSo.getField();
         String value = filterSo.getValue();
         switch (filterSo.getMode()) {
             case "in":
