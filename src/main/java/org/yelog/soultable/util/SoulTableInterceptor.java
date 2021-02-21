@@ -106,7 +106,7 @@ public class SoulTableInterceptor implements Interceptor {
 
                     // 排序
                     if (StringUtils.isNotBlank(soulPage.getField())) {
-                        filterSql.append(" order by ").append(fieldMap.size() > 0 ? fieldMap.get(soulPage.getField()) : soulPage.getField()).append(" ").append(soulPage.getOrder());
+                        filterSql.append(" order by ").append(fieldMap.size() > 0 ? (fieldMap.get(soulPage.getField()) != null ? fieldMap.get(soulPage.getField()) : soulPage.getField()) : soulPage.getField()).append(" ").append(soulPage.getOrder());
                     }
 
                     if (soulPage.getLimit()==100000000) {
