@@ -106,7 +106,7 @@ public class SoulTableInterceptor implements Interceptor {
 
                     // 排序
                     if (StringUtils.isNotBlank(soulPage.getField())) {
-                        filterSql.append(" order by ").append(fieldMap.size() > 0 ? fieldMap.get(soulPage.getField()) : soulPage.getField()).append(" ").append(soulPage.getOrder());
+                        filterSql.append(" order by ").append(fieldMap.size() > 0 ? (fieldMap.get(soulPage.getField()) != null ? fieldMap.get(soulPage.getField()) : soulPage.getField()) : soulPage.getField()).append(" ").append(soulPage.getOrder());
                     }
 
                     if (soulPage.getLimit()==100000000) {
@@ -154,7 +154,7 @@ public class SoulTableInterceptor implements Interceptor {
             filterSql.append(StringUtils.isBlank(filterSo.getPrefix())?" and":" "+filterSo.getPrefix());
         }
 
-        String field = fieldMap.size()>0?fieldMap.get(filterSo.getField()):filterSo.getField();
+        String field = fieldMap.size()>0? (fieldMap.get(filterSo.getField()) != null ? fieldMap.get(filterSo.getField()) : filterSo.getField()) :filterSo.getField();
         String value = filterSo.getValue();
         switch (filterSo.getMode()) {
             case "in":
