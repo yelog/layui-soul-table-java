@@ -5,15 +5,12 @@
 
 FROM amazoncorretto:8u322  as builder
 WORKDIR /build
-ARG ARTIFACT_ID
-COPY target/${ARTIFACT_ID}.jar app.jar
+COPY target/layui-soul-table-java.jar app.jar
 RUN java -Djarmode=layertools -jar app.jar extract && rm app.jar
 
 FROM amazoncorretto:8u322
 LABEL maintainer="jaytp@qq.com"
 WORKDIR /tmp
-ARG ARTIFACT_ID
-ENV ARTIFACT_ID ${ARTIFACT_ID}
 
 # 依赖
 COPY --from=builder /build/dependencies/ ./
