@@ -20,4 +20,4 @@ COPY --from=builder /build/spring-boot-loader/ ./
 COPY --from=builder /build/application/ ./
 
 # 容器运行时启动命令
-CMD java -Xms 256m -Xmx256m org.springframework.boot.loader.JarLauncher
+CMD java -Xms256m -Xmx256m org.springframework.boot.loader.JarLauncher
