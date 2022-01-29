@@ -3,12 +3,12 @@
 # 原理：在第二部分中，每次 copy 就会在目标镜像内产生一层 layer，将依赖和代码分开，
 #      绝大部分更新都不会动到依赖，所以只需更新代码几十k左右的代码层即可
 
-FROM amazoncorretto:8u322  as builder
+FROM amazoncorretto:11.0.11  as builder
 WORKDIR /build
 COPY target/layui-soul-table-java.jar app.jar
 RUN java -Djarmode=layertools -jar app.jar extract && rm app.jar
 
-FROM amazoncorretto:8u322
+FROM amazoncorretto:11.0.11
 LABEL maintainer="jaytp@qq.com"
 WORKDIR /tmp
 
