@@ -11,7 +11,6 @@ import org.apache.ibatis.reflection.DefaultReflectorFactory;
 import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.reflection.SystemMetaObject;
 import org.apache.ibatis.session.RowBounds;
-import org.apache.log4j.Logger;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -23,37 +22,39 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
- *  tableFilter的mybatis拦截器
- *  支持：
- *  1、表头筛选
- *  2、分页
- *  3、目前支持数据库：mysql、oracle
+ * tableFilter的mybatis拦截器
+ * 支持：
+ * 1、表头筛选
+ * 2、分页
+ * 3、目前支持数据库：mysql、oracle
+ *
  * @author Yelog
- * @date 2019-03-16 22:48
  * @version 1.0
+ * @date 2019-03-16 22:48
  */
-@Intercepts({@Signature(type= StatementHandler.class,method="prepare",args={Connection.class,Integer.class})})
+@Intercepts({@Signature(type = StatementHandler.class, method = "prepare", args = {Connection.class, Integer.class})})
 public class SoulTableInterceptor implements Interceptor {
-    public static Logger log = Logger.getLogger(SoulTableInterceptor.class);
     private String dbType;
 
-	private enum DB_DIALECT {ORACLE, MYSQL};
+    private enum DB_DIALECT {ORACLE, MYSQL}
+
+    ;
 
     public String getDbType() {
-		return dbType;
-	}
+        return dbType;
+    }
 
-	public void setDbType(String dbType) {
-		this.dbType = dbType;
-	}
+    public void setDbType(String dbType) {
+        this.dbType = dbType;
+    }
 
     @Override
     public Object intercept(Invocation invocation) throws Throwable {
-        StatementHandler statementHandler = (StatementHandler)invocation.getTarget();
+        StatementHandler statementHandler = (StatementHandler) invocation.getTarget();
         //通过MetaObject优雅访问对象的属性，这里是访问statementHandler的属性
         MetaObject metaObject = MetaObject.forObject(statementHandler, SystemMetaObject.DEFAULT_OBJECT_FACTORY, SystemMetaObject.DEFAULT_OBJECT_WRAPPER_FACTORY, new DefaultReflectorFactory());
         //先拦截到RoutingStatementHandler，里面有个StatementHandler类型的delegate变量，其实现类是BaseStatementHandler，然后就到BaseStatementHandler的成员变量mappedStatement
-        MappedStatement mappedStatement = (MappedStatement)metaObject.getValue("delegate.mappedStatement");
+        MappedStatement mappedStatement = (MappedStatement) metaObject.getValue("delegate.mappedStatement");
         // 配置文件中SQL语句的ID
         BoundSql boundSql = statementHandler.getBoundSql();
         // 原始的SQL语句
@@ -67,7 +68,7 @@ public class SoulTableInterceptor implements Interceptor {
             if (boundSql.getParameterObject() instanceof SoulPage) {
                 soulPage = (SoulPage) boundSql.getParameterObject();
             } else {
-                Map<?,?> parameter = (Map<?,?>)boundSql.getParameterObject();
+                Map<?, ?> parameter = (Map<?, ?>) boundSql.getParameterObject();
                 for (Object key : parameter.keySet()) {
                     if (parameter.get(key) instanceof SoulPage) {
                         soulPage = (SoulPage) parameter.get(key);
@@ -76,15 +77,15 @@ public class SoulTableInterceptor implements Interceptor {
             }
 
             // 没有 soulPage 不需要拦截
-            if(soulPage != null) {
+            if (soulPage != null) {
                 if (soulPage.isColumn()) {
                     // 排序
                     return invocation.proceed();
                 } else {
                     Map<String, String> fieldMap = new HashMap<>();
-                    if (mappedStatement.getResultMaps().get(0).getResultMappings().size()>0) {
+                    if (mappedStatement.getResultMaps().get(0).getResultMappings().size() > 0) {
                         for (ResultMapping resultMapping : mappedStatement.getResultMaps().get(0).getResultMappings()) {
-                            fieldMap.put(resultMapping.getProperty(),resultMapping.getColumn());
+                            fieldMap.put(resultMapping.getProperty(), resultMapping.getColumn());
                         }
                     }
                     /**
@@ -93,15 +94,15 @@ public class SoulTableInterceptor implements Interceptor {
                     StringBuffer filterSql = new StringBuffer("select * from (" + sql + ") A WHERE");
                     // 获取前端指定类型
                     Map<String, Map<String, String>> typeMap = soulPage.getTypeMap();
-					List<FilterSo> filterSos = soulPage.getFilterSos();
-					if (filterSos != null) {
-                        filterSos.forEach(filterSo->{
+                    List<FilterSo> filterSos = soulPage.getFilterSos();
+                    if (filterSos != null) {
+                        filterSos.forEach(filterSo -> {
                             handleFilterSo(filterSo, typeMap, fieldMap, filterSql);
                         });
                     }
-					if (StringUtils.endsWith(filterSql, "WHERE")) {
-					    filterSql.setLength(0);
-					    filterSql.append("select * from (").append(sql).append(") A");
+                    if (StringUtils.endsWith(filterSql, "WHERE")) {
+                        filterSql.setLength(0);
+                        filterSql.append("select * from (").append(sql).append(") A");
                     }
 
                     // 排序
@@ -109,8 +110,8 @@ public class SoulTableInterceptor implements Interceptor {
                         filterSql.append(" order by ").append(fieldMap.size() > 0 ? (fieldMap.get(soulPage.getField()) != null ? fieldMap.get(soulPage.getField()) : soulPage.getField()) : soulPage.getField()).append(" ").append(soulPage.getOrder());
                     }
 
-                    if (soulPage.getLimit()==100000000) {
-                        metaObject.setValue("delegate.boundSql.sql",filterSql.toString());
+                    if (soulPage.getLimit() == 100000000) {
+                        metaObject.setValue("delegate.boundSql.sql", filterSql.toString());
                     } else {
                         // 设置总数
                         soulPage.setCount(getTotle(invocation, metaObject, filterSql.toString()));
@@ -125,7 +126,7 @@ public class SoulTableInterceptor implements Interceptor {
                             //改造后带分页查询的SQL语句 MYSQL版
                             pageSql = "select * from (" + filterSql.toString() + " ) A limit " + soulPage.getOffset() + ", " + soulPage.getLimit();
                         }
-                        metaObject.setValue("delegate.boundSql.sql",pageSql);
+                        metaObject.setValue("delegate.boundSql.sql", pageSql);
                     }
 
                     // 采用物理分页后，就不需要mybatis的内存分页了，所以重置下面的两个参数
@@ -141,36 +142,36 @@ public class SoulTableInterceptor implements Interceptor {
     /**
      * 处理表头筛选数据
      *
-     * @author Yelog
-     * @date 2019-03-16 22:52
      * @param filterSo
      * @param typeMap
      * @param fieldMap
      * @param filterSql
      * @return void
+     * @author Yelog
+     * @date 2019-03-16 22:52
      */
     private void handleFilterSo(FilterSo filterSo, Map<String, Map<String, String>> typeMap, Map<String, String> fieldMap, StringBuffer filterSql) {
         if (!StringUtils.endsWith(filterSql, "(") && !StringUtils.endsWith(filterSql, "WHERE")) {
-            filterSql.append(StringUtils.isBlank(filterSo.getPrefix())?" and":" "+filterSo.getPrefix());
+            filterSql.append(StringUtils.isBlank(filterSo.getPrefix()) ? " and" : " " + filterSo.getPrefix());
         }
 
-        String field = fieldMap.size()>0? (fieldMap.get(filterSo.getField()) != null ? fieldMap.get(filterSo.getField()) : filterSo.getField()) :filterSo.getField();
+        String field = fieldMap.size() > 0 ? (fieldMap.get(filterSo.getField()) != null ? fieldMap.get(filterSo.getField()) : filterSo.getField()) : filterSo.getField();
         String value = filterSo.getValue();
         switch (filterSo.getMode()) {
             case "in":
-                if (filterSo.getValues()==null || filterSo.getValues().size()==0) {
+                if (filterSo.getValues() == null || filterSo.getValues().size() == 0) {
                     filterSql.append(" 1=1");
                     break;
                 }
-                switch (typeMap.get(field)==null?"":typeMap.get(field).get("type")) {
+                switch (typeMap.get(field) == null ? "" : typeMap.get(field).get("type")) {
                     case "date":
-						if (DB_DIALECT.ORACLE.name().equalsIgnoreCase(dbType)) {
+                        if (DB_DIALECT.ORACLE.name().equalsIgnoreCase(dbType)) {
                             filterSql.append(" to_char(");
-						} else {
+                        } else {
                             filterSql.append(" DATE_FORMAT(");
-						}
+                        }
 
-						filterSql.append(field)
+                        filterSql.append(field)
                                 .append(", '");
                         if (DB_DIALECT.ORACLE.name().equalsIgnoreCase(dbType)) {
                             filterSql.append(typeMap.get(field).get("value").replaceAll("HH", "HH24").replaceAll("mm", "mi"));
@@ -202,18 +203,18 @@ public class SoulTableInterceptor implements Interceptor {
                                         .append(field)
                                         .append(", '");
                                 for (String filterSoValue : filterSo.getValues()) {
-                                    filterSql.append("("+filterSo.getSplit()+"|^){1}"+filterSoValue+"("+filterSo.getSplit()+"|$){1}|");
+                                    filterSql.append("(" + filterSo.getSplit() + "|^){1}" + filterSoValue + "(" + filterSo.getSplit() + "|$){1}|");
                                 }
-                                filterSql.deleteCharAt(filterSql.length()-1);
+                                filterSql.deleteCharAt(filterSql.length() - 1);
                                 filterSql.append("')");
                             } else {
                                 filterSql.append(" ")
                                         .append(field)
                                         .append(" regexp '(");
                                 for (String filterSoValue : filterSo.getValues()) {
-                                    filterSql.append("("+filterSo.getSplit()+"|^){1}"+filterSoValue+"("+filterSo.getSplit()+"|$){1}|");
+                                    filterSql.append("(" + filterSo.getSplit() + "|^){1}" + filterSoValue + "(" + filterSo.getSplit() + "|$){1}|");
                                 }
-                                filterSql.deleteCharAt(filterSql.length()-1);
+                                filterSql.deleteCharAt(filterSql.length() - 1);
                                 filterSql.append(")+'");
                             }
                         }
@@ -265,7 +266,8 @@ public class SoulTableInterceptor implements Interceptor {
                     case "notNull":
                         filterSql.append(" is not null");
                         break;
-                    default:break;
+                    default:
+                        break;
                 }
                 break;
             case "date":
@@ -324,19 +326,20 @@ public class SoulTableInterceptor implements Interceptor {
                 break;
             case "group":
                 filterSql.append(" (");
-                if (filterSo.getChildren().size()>0) {
-                    filterSo.getChildren().forEach(f->{
-                        handleFilterSo(f, typeMap, fieldMap ,filterSql);
+                if (filterSo.getChildren().size() > 0) {
+                    filterSo.getChildren().forEach(f -> {
+                        handleFilterSo(f, typeMap, fieldMap, filterSql);
                     });
                 } else {
                     filterSql.append(" 1=1");
                 }
                 filterSql.append(" )");
-            default:break;
+            default:
+                break;
         }
 
 
-	}
+    }
 
     @Override
     public Object plugin(Object target) {
@@ -347,22 +350,22 @@ public class SoulTableInterceptor implements Interceptor {
     public void setProperties(Properties properties) {
         this.dbType = properties.getProperty("dbType");
         if (StringUtils.isEmpty(dbType)) {
-        	dbType = DB_DIALECT.ORACLE.name();
+            dbType = DB_DIALECT.ORACLE.name();
         }
     }
 
     /**
      * 获取当前sql查询的记录总数
      *
-     * @author Yelog
-     * @date 2019-03-16 22:53
      * @param invocation
      * @param metaObject
      * @param sql
      * @return int
+     * @author Yelog
+     * @date 2019-03-16 22:53
      */
     private int getTotle(Invocation invocation, MetaObject metaObject, String sql) throws SQLException {
-        Connection connection = (Connection)invocation.getArgs()[0];
+        Connection connection = (Connection) invocation.getArgs()[0];
         // 查询总条数的SQL语句
         String countSql = "select count(*) from (" + sql + ") a";
         //执行总条数SQL语句的查询
@@ -372,7 +375,7 @@ public class SoulTableInterceptor implements Interceptor {
         parameterHandler.setParameters(countStatement);
         ResultSet rs = countStatement.executeQuery();
 
-        if(rs.next()) {
+        if (rs.next()) {
             return rs.getInt(1);
         }
         return 0;
@@ -381,10 +384,10 @@ public class SoulTableInterceptor implements Interceptor {
     /**
      * 判断是否是select语句，只有select语句，才会用到分页
      *
-     * @author Yujie Yang
-     * @date 2019-03-16 22:55
      * @param sql
      * @return boolean
+     * @author Yujie Yang
+     * @date 2019-03-16 22:55
      */
     private boolean checkIsSelectFalg(String sql) {
         String trimSql = sql.trim();

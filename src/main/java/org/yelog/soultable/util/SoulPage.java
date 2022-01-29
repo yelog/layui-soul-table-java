@@ -49,12 +49,12 @@ public class SoulPage<T> {
      * 当前页 从1开始
      */
     @JsonIgnore
-    private Integer page=1;
+    private Integer page = 1;
     /**
      * 页大小
      */
     @JsonIgnore
-    private Integer limit=100000000;
+    private Integer limit = 100000000;
 
     /**
      * 查询列数据
@@ -81,10 +81,11 @@ public class SoulPage<T> {
     @JsonIgnore
     private String order = "asc";
 
-    public SoulPage () {
+    public SoulPage() {
 
     }
-    public SoulPage (Integer page, Integer limit) {
+
+    public SoulPage(Integer page, Integer limit) {
         this.page = page;
         this.limit = limit;
     }
@@ -134,7 +135,7 @@ public class SoulPage<T> {
                     columnMap.computeIfAbsent(column, k -> new HashSet<>());
                     Object columnObject = null;
                     if (datum instanceof Map) {
-                        columnObject = ((Map<String, ?>)datum).get(column);
+                        columnObject = ((Map<String, ?>) datum).get(column);
                     } else {
                         try {
                             columnObject = ReflectHelper.getValueByFieldName(datum, column);
@@ -208,7 +209,7 @@ public class SoulPage<T> {
     }
 
     public List<String> getColumns() {
-        return StringUtils.isNotBlank(columns)? JSON.parseArray(columns, String.class):new ArrayList<>();
+        return StringUtils.isNotBlank(columns) ? JSON.parseArray(columns, String.class) : new ArrayList<>();
     }
 
     public void setColumns(String columns) {
@@ -226,6 +227,7 @@ public class SoulPage<T> {
 
     /**
      * 结构化 Filter type
+     *
      * @return
      */
     @JsonIgnore
@@ -233,10 +235,10 @@ public class SoulPage<T> {
         Map<String, Map<String, String>> typeMap = new HashMap<>();
         if (StringUtils.isNotEmpty(tableFilterType)) {
             Map<String, String> filterType = JSON.parseObject(tableFilterType, Map.class);
-            filterType.forEach((k,v)->{
+            filterType.forEach((k, v) -> {
                 Map<String, String> map = new HashMap<>();
                 map.put("type", v.substring(0, v.indexOf("[")));
-                map.put("value",v.substring(v.indexOf("[")+1, v.indexOf("]")) );
+                map.put("value", v.substring(v.indexOf("[") + 1, v.indexOf("]")));
                 typeMap.put(k, map);
             });
         }
@@ -245,12 +247,13 @@ public class SoulPage<T> {
 
     /**
      * 根据类型转换最终的值
+     *
      * @param typeMap
      * @param column
      * @param columnObject
      * @return
      */
-    public String getFormatValue (Map<String, Map<String, String>> typeMap, String column, Object columnObject) {
+    public String getFormatValue(Map<String, Map<String, String>> typeMap, String column, Object columnObject) {
         String columnValue;
         if (typeMap.containsKey(column)) {
             if ("date".equalsIgnoreCase(typeMap.get(column).get("type")) && columnObject instanceof Date) {
@@ -262,7 +265,7 @@ public class SoulPage<T> {
             if (columnObject instanceof Date) {
                 columnValue = dateFormat((Date) columnObject, null);
             } else {
-                columnValue = String.valueOf(columnObject) ;
+                columnValue = String.valueOf(columnObject);
             }
         }
         return columnValue;
@@ -270,9 +273,10 @@ public class SoulPage<T> {
 
     /**
      * 是否是列查询
+     *
      * @return
      */
-    public boolean isColumn () {
+    public boolean isColumn() {
         return !getColumns().isEmpty();
     }
 

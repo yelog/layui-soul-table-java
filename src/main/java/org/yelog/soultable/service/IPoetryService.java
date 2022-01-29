@@ -5,7 +5,7 @@ import org.yelog.soultable.util.SoulPage;
 
 public interface IPoetryService {
 
-	Object dataGrid (SoulPage<Poetry> soulPage);
+    Object dataGrid(SoulPage<Poetry> soulPage);
 
 }
 
