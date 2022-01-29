@@ -2,7 +2,7 @@ FROM moxm/java:1.8-full as builder
 
 MAINTAINER jaytp@qq.com
 
-ADD https://mirror.dkm.cz/apache/tomcat/tomcat-8/v8.5.61/bin/apache-tomcat-8.5.61.tar.gz /usr/local
+ADD https://dlcdn.apache.org/tomcat/tomcat-8/v8.5.75/bin/apache-tomcat-8.5.75.tar.gz /usr/local
 
 RUN tar -xvf /usr/local/apache-tomcat-8.5.61.tar.gz -C /usr/local/
 
